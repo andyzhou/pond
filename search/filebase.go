@@ -10,6 +10,7 @@ import (
 
 /*
  * file base info search face
+ * - file md5 value as primary key
  */
 
 //face info

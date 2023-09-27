@@ -12,7 +12,7 @@ import (
 
 /*
  * inter storage face
- * - inter meta and chunk data
+ * - include meta and chunk data
  */
 
 //global variable
@@ -202,8 +202,8 @@ func (f *Storage) WriteData(data []byte) (string, error) {
 	fileBaseObj, _ := fileBaseSearch.GetOne(md5Val)
 	if fileBaseObj == nil {
 		//write file base byte data
-		resp, subErr := activeChunk.WriteFile(data)
-		if subErr != nil {
+		resp := activeChunk.WriteFile(data)
+		if resp.Err != nil {
 			return shortUrl, err
 		}
 
@@ -217,7 +217,7 @@ func (f *Storage) WriteData(data []byte) (string, error) {
 		fileBaseObj.CreateAt = time.Now().Unix()
 
 		//save into search
-		subErr = fileBaseSearch.AddOne(fileBaseObj)
+		subErr := fileBaseSearch.AddOne(fileBaseObj)
 		if subErr != nil {
 			return shortUrl, subErr
 		}
@@ -243,6 +243,11 @@ func (f *Storage) WriteData(data []byte) (string, error) {
 	//save into search
 	err = fileInfoSearch.AddOne(fileInfoObj)
 	return shortUrl, err
+}
+
+//set lazy mode
+func (f *Storage) SetLazyMode(switcher bool) {
+	f.manager.SetLazyMode(switcher)
 }
 
 //set root path

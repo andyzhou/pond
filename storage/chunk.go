@@ -11,6 +11,7 @@ import (
 	"os"
 	"sync"
 	"sync/atomic"
+	"time"
 )
 
 /*
@@ -56,10 +57,13 @@ type Chunk struct {
 	blockSize int64
 	readProcesses int
 	openDone bool
+	metaUpdated bool
+	isLazyMode bool
 	readChan chan ChunkReadReq
 	writeChan chan ChunkWriteReq
 	readCloseChan chan bool
 	writeCloseChan chan bool
+	metaCloseChan chan bool
 	sync.RWMutex
 }
 
@@ -90,11 +94,13 @@ func NewChunk(
 		metaFilePath: chunkMetaFile,
 		dataFilePath: fmt.Sprintf("%v/%v", rootPath, chunkDataFile),
 		blockSize: define.DefaultChunkBlockSize,
+		isLazyMode: false,
 		readProcesses: readProcess,
 		readChan: make(chan ChunkReadReq, define.DefaultChunkChanSize),
 		writeChan: make(chan ChunkWriteReq, define.DefaultChunkChanSize),
 		readCloseChan: make(chan bool, 1),
 		writeCloseChan: make(chan bool, 1),
+		metaCloseChan: make(chan bool, 1),
 	}
 	this.interInit()
 	return this
@@ -103,6 +109,8 @@ func NewChunk(
 //quit
 func (f *Chunk) Quit() {
 	if f.file != nil {
+		//force update meta data
+		f.updateMetaFile(true)
 		f.file.Close()
 		f.file = nil
 	}
@@ -111,6 +119,9 @@ func (f *Chunk) Quit() {
 	}
 	if f.writeCloseChan != nil {
 		close(f.writeCloseChan)
+	}
+	if f.metaCloseChan != nil {
+		close(f.metaCloseChan)
 	}
 }
 
@@ -133,7 +144,16 @@ func (f *Chunk) ReadFile(
 	if offset < 0 || size <= 0 {
 		return nil, errors.New("invalid parameter")
 	}
-	if f.readChan == nil || len(f.readChan) >= define.DefaultChunkChanSize {
+
+	//check lazy mode
+	if !f.isLazyMode {
+		//direct read data
+		return f.directReadData(offset, size)
+	}
+
+	//for lazy mode
+	if f.readChan == nil ||
+		len(f.readChan) >= define.DefaultChunkChanSize {
 		return nil, errors.New("chunk data read chan invalid")
 	}
 
@@ -160,17 +180,27 @@ func (f *Chunk) ReadFile(
 func (f *Chunk) WriteFile(
 			data []byte,
 			offsets ...int64,
-		) (*ChunkWriteResp, error) {
+		) *ChunkWriteResp {
 	var (
 		offset int64 = -1
+		resp ChunkWriteResp
 	)
 
 	//check
 	if data == nil {
-		return nil, errors.New("invalid parameter")
+		resp.Err = errors.New("invalid parameter")
+		return &resp
 	}
+
+	//check lazy mode
+	if !f.isLazyMode {
+		//direct write data
+		return f.directWriteData(data, offsets...)
+	}
+
 	if f.writeChan == nil || len(f.writeChan) >= define.DefaultChunkChanSize {
-		return nil, errors.New("chunk data write chan invalid")
+		resp.Err = errors.New("chunk data write chan invalid")
+		return &resp
 	}
 
 	//detect offset
@@ -191,9 +221,11 @@ func (f *Chunk) WriteFile(
 	//wait for response
 	resp, isOk := <- req.Resp
 	if !isOk && &resp == nil {
-		return nil, errors.New("can't get response data")
+		resp = ChunkWriteResp{}
+		resp.Err = errors.New("can't get response data")
+		return &resp
 	}
-	return &resp, resp.Err
+	return &resp
 }
 
 /////////////////
@@ -233,7 +265,9 @@ func (f *Chunk) readProcess() {
 				req.Resp <- resp
 			}
 		case <- f.readCloseChan:
-			return
+			{
+				return
+			}
 		}
 	}
 }
@@ -272,6 +306,41 @@ func (f *Chunk) writeProcess() {
 	}
 }
 
+//meta auto save process
+func (f *Chunk) saveMetaProcess() {
+	var (
+		ticker = time.NewTicker(define.ChunkFileMetaSaveRate * time.Second)
+		m any = nil
+	)
+
+	//defer
+	defer func() {
+		if err := recover(); err != m {
+			log.Printf("chunk.saveMetaProcess panic, err:%v\n", err)
+		}
+
+		//force save meta data
+		f.updateMetaFile(true)
+
+		//close ticker
+		ticker.Stop()
+	}()
+
+	//loop
+	for {
+		select {
+		case <- ticker.C:
+			{
+				if !f.metaUpdated {
+					f.updateMetaFile()
+				}
+			}
+		case <- f.metaCloseChan:
+			return
+		}
+	}
+}
+
 //gen new file id
 func (f *Chunk) genNewFileId() int64 {
 	return atomic.AddInt64(&f.chunkObj.Id, 1)
@@ -283,15 +352,24 @@ func (f *Chunk) readData(req *ChunkReadReq) ([]byte, error) {
 	if req == nil || req.Offset < 0 || req.Size <= 0 {
 		return nil, errors.New("invalid parameter")
 	}
+	return f.directReadData(req.Offset, req.Size)
+}
+
+//direct read file data
+func (f *Chunk) directReadData(offset, size int64) ([]byte, error) {
+	//check
+	if offset < 0 || size <= 0 {
+		return nil, errors.New("invalid parameter")
+	}
 	if f.file == nil {
 		return nil, errors.New("chunk file closed")
 	}
 
 	//create block buffer
-	byteData := make([]byte, req.Size)
+	byteData := make([]byte, size)
 
 	//read real data
-	_, err := f.file.ReadAt(byteData, req.Offset)
+	_, err := f.file.ReadAt(byteData, offset)
 	return byteData, err
 }
 
@@ -310,17 +388,39 @@ func (f *Chunk) writeData(req *ChunkWriteReq) *ChunkWriteResp {
 		return &resp
 	}
 
+	//begin write data
+	writeResp := f.directWriteData(req.Data)
+	resp = *writeResp
+	return &resp
+}
+
+//direct write data
+func (f *Chunk) directWriteData(
+			data []byte,
+			offsets ...int64,
+		) *ChunkWriteResp {
+	var (
+		resp ChunkWriteResp
+	)
+
+	//check
+	if data == nil {
+		resp.Err = errors.New("invalid parameter")
+		return &resp
+	}
+	if f.file == nil {
+		resp.Err = errors.New("chunk file closed")
+		return &resp
+	}
+
 	//calculate real block size
-	dataSize := float64(len(req.Data))
+	dataSize := float64(len(data))
 	realBlocks := int64(math.Ceil(dataSize / float64(f.blockSize)))
 
 	//create block buffer
 	realBlockSize := realBlocks * f.blockSize
 	byteData := make([]byte, realBlockSize)
-	copied := copy(byteData, req.Data)
-	//buffer := bytes.NewBuffer(byteData)
-	//_, subErr := buffer.Write(req.Data)
-	log.Printf("copied:%v\n", copied)
+	copy(byteData, data)
 
 	//write block buffer data into chunk
 	_, err := f.file.WriteAt(byteData, f.chunkObj.Size)
@@ -342,13 +442,32 @@ func (f *Chunk) writeData(req *ChunkWriteReq) *ChunkWriteResp {
 }
 
 //update meta file
-func (f *Chunk) updateMetaFile() error {
-	//save meta data
+func (f *Chunk) updateMetaFile(isForces ...bool) error {
+	var (
+		isForce bool
+	)
+	//check
+	if f.metaFilePath == "" || f.chunkObj == nil {
+		return errors.New("inter data not init yet")
+	}
+
+	//detect
+	if isForces != nil && len(isForces) > 0 {
+		isForce = isForces[0]
+	}
+	if !isForce {
+		//just update switcher
+		f.metaUpdated = false
+		return nil
+	}
+
+	//force save meta data
 	gob := face.GetFace().GetGob()
 	err := gob.Store(f.metaFilePath, f.chunkObj)
 	if err != nil {
 		log.Printf("chunk.writeData, update meta failed, err:%v\n", err.Error())
 	}
+	f.metaUpdated = true
 	return err
 }
 
@@ -364,12 +483,13 @@ func (f *Chunk) openDataFile() error {
 	f.file = file
 	f.openDone = true
 
-	//start write process
-	go f.writeProcess()
+	if f.isLazyMode {
+		//start write process
+		go f.writeProcess()
 
-	//start read process
-	go f.readProcess()
-
+		//start read process
+		go f.readProcess()
+	}
 	return nil
 }
 
@@ -405,4 +525,7 @@ func (f *Chunk) interInit() {
 	if err != nil {
 		log.Printf("chunk open data file %v failed, err:%v\n", f.dataFilePath, err.Error())
 	}
+
+	//run save meta process
+	go f.saveMetaProcess()
 }

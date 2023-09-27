@@ -2,5 +2,5 @@ package define
 
 const (
 	ChunksMetaFile = "chunks.meta"
-	ChunkAutoSaveRate = 30 //xx seconds
+	ChunksMetaSaveRate = 5 //xx seconds
 )

@@ -25,6 +25,7 @@ type Meta struct {
 	maxChunkSize int64
 	metaJson *json.MetaJson //running data
 	metaUpdated bool
+	lazySaveMode bool
 	objLocker sync.RWMutex
 	tickChan chan struct{}
 	closeChan chan bool
@@ -42,7 +43,6 @@ func NewMeta() *Meta {
 		tickChan: make(chan struct{}, 1),
 		closeChan: make(chan bool, 1),
 	}
-	//go this.runMainProcess()
 	return this
 }
 
@@ -52,11 +52,10 @@ func (f *Meta) Quit() {
 	if f.closeChan != nil {
 		close(f.closeChan)
 	}
-
-	//save data
-	err := f.SaveMeta()
+	//force save data
+	err := f.SaveMeta(true)
 	if err != nil {
-		return
+		log.Printf("meta.Quit err:%v\n", err.Error())
 	}
 }
 
@@ -92,26 +91,48 @@ func (f *Meta) CreateNewChunk() *json.ChunkFileJson {
 }
 
 //save meta data
-func (f *Meta) SaveMeta() error {
+func (f *Meta) SaveMeta(isForces ...bool) error {
+	var (
+		isForce bool
+	)
+
+	//detect
+	if isForces != nil && len(isForces) > 0 {
+		isForce = isForces[0]
+	}
+
 	//check
-	if f.metaFile == "" {
-		return errors.New("meta gob file not setup")
+	if f.lazySaveMode && !isForce {
+		//do nothing
+		return nil
 	}
 
-	//get gob face
-	gob := face.GetFace().GetGob()
-
-	//begin save meta with locker
-	err := gob.Store(f.metaFile, f.metaJson)
-	if err != nil {
-		log.Printf("meta.SaveMeta failed, err:%v\n", err.Error())
-	}
+	//save meta data
+	err := f.saveMetaData()
 	return err
 }
 
 //get root path
 func (f *Meta) GetRootPath() string {
 	return f.rootPath
+}
+
+//set lazy save meta file mode
+func (f *Meta) SetLazyMode(switcher bool) {
+	//check
+	if (switcher && f.lazySaveMode) || (!switcher && !f.lazySaveMode) {
+		//same value, do nothing
+		return
+	}
+	if switcher && !f.lazySaveMode {
+		//start lazy mode
+		f.lazySaveMode = true
+		go f.runMainProcess()
+		return
+	}
+	//close lazy mode
+	f.lazySaveMode = false
+	f.closeChan <- true
 }
 
 //set chunk max size
@@ -155,6 +176,76 @@ func (f *Meta) SetRootPath(path string) error {
 /////////////////
 //private func
 /////////////////
+
+//run main process
+func (f *Meta) runMainProcess() {
+	var (
+		m any = nil
+	)
+
+	//defer
+	defer func() {
+		if err := recover(); err != m {
+			log.Printf("meta.mainProecss panic, err:%v\n", err)
+		}
+	}()
+
+	//tick setup
+	tick := func() {
+		sf := func() {
+			if f.tickChan != nil {
+				f.tickChan <- struct{}{}
+			}
+		}
+		duration := time.Duration(define.ChunksMetaSaveRate) * time.Second
+		time.AfterFunc(duration, sf)
+	}
+	tick()
+
+	//loop
+	for {
+		select {
+		case <- f.tickChan:
+			{
+				//save meta
+				f.autoSaveMeta()
+				//start next tick
+				tick()
+			}
+		case <- f.closeChan:
+			return
+		}
+	}
+}
+
+//auto save meta
+func (f *Meta) autoSaveMeta() {
+	f.Lock()
+	defer f.Unlock()
+	if !f.metaUpdated {
+		return
+	}
+	f.saveMetaData()
+	f.metaUpdated = false
+}
+
+//save meta data
+func (f *Meta) saveMetaData() error {
+	//check
+	if f.metaFile == "" {
+		return errors.New("meta gob file not setup")
+	}
+
+	//get gob face
+	gob := face.GetFace().GetGob()
+
+	//begin save meta with locker
+	err := gob.Store(f.metaFile, f.metaJson)
+	if err != nil {
+		log.Printf("meta.SaveMeta failed, err:%v\n", err.Error())
+	}
+	return err
+}
 
 //gen new file data id
 func (f *Meta) genNewFileDataId() int64 {

@@ -4,6 +4,7 @@ import (
 	"encoding/gob"
 	"errors"
 	"github.com/andyzhou/pond/define"
+	"github.com/andyzhou/pond/util"
 	"os"
 	"path"
 	"sync"
@@ -15,18 +16,47 @@ import (
  * - suggest lazy store with rate
  */
 
+//inter type
+type (
+	GobInfo struct {
+		File *os.File
+		Data interface{}
+	}
+)
+
 //face info
 type Gob struct {
 	rootPath string
+	filesMap sync.Map //filePath -> *GobInfo
+	files int32
+	util.Util
 	sync.RWMutex
 }
 
 //construct
 func NewGob() *Gob {
 	this := &Gob{
-		rootPath: define.DefaultRootPath,
+		filesMap: sync.Map{},
 	}
+	this.interInit()
 	return this
+}
+
+//quit
+func (f *Gob) Quit() {
+	if f.files <= 0 {
+		return
+	}
+	//save and close files
+	sf := func(k, v interface{}) bool {
+		gobFile, _ := k.(string)
+		gobInfo, _ := v.(*GobInfo)
+		if gobFile != "" && gobInfo != nil {
+			//save data, todo...
+		}
+		return true
+	}
+	f.filesMap.Range(sf)
 }
 
 //store chunk meta info
@@ -42,7 +72,7 @@ func (f *Gob) Store(gobFile string, inputVal interface{}) error {
 
 	//format meta file path
 	filePath := path.Join(f.rootPath, gobFile)
-	file, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE, define.FilePerm)
+	file, err := os.OpenFile(filePath, os.O_RDWR|os.O_CREATE, define.FilePerm)
 	if err != nil {
 		return err
 	}
@@ -69,7 +99,7 @@ func (f *Gob) Load(gobFile string, outVal interface{}) error {
 	filePath := path.Join(f.rootPath, gobFile)
 
 	//try open file
-	file, err := os.OpenFile(filePath, os.O_CREATE|os.O_RDWR, define.FilePerm)
+	file, err := os.OpenFile(filePath, os.O_RDWR|os.O_CREATE, define.FilePerm)
 	if err != nil {
 		return err
 	}
@@ -92,4 +122,17 @@ func (f *Gob) SetRootPath(path string) error {
 	}
 	f.rootPath = path
 	return nil
+}
+
+////////////////
+//private func
+////////////////
+
+//inter init
+func (f *Gob) interInit() {
+	//get work dir
+	curPath, _ := f.GetCurDir()
+	if curPath != "" {
+		f.rootPath = curPath
+	}
 }

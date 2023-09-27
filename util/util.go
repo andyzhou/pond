@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/andyzhou/pond/define"
-	"log"
 	"os"
 )
 
@@ -46,16 +45,19 @@ func (f *Util) CheckDir(dir string) error {
 	if dir == "" {
 		return errors.New("invalid dir parameter")
 	}
-
 	//detect and make dir
 	_, err := os.Stat(dir)
 	if err != nil {
 		//dir not exist
 		err = os.Mkdir(dir, define.FilePerm)
 		if err != nil {
-			log.Printf("util.checkDir, make dir failed, err:%v\n", err.Error())
 			return err
 		}
 	}
 	return nil
+}
+
+//get current dir
+func (f *Util) GetCurDir() (string, error) {
+	return os.Getwd()
 }

@@ -1,12 +1,14 @@
 package main
 
 import (
+	"fmt"
 	"github.com/andyzhou/pond"
 	"log"
+	"os"
 )
 
 const (
-	DataPath = "/Volumes/Data/project/src/github.com/andyzhou/pond/private"
+	DataDir = "./private"
 	ShortUrl = "EVBJFp" //"dMVRt8"
 )
 
@@ -27,8 +29,16 @@ func main() {
 	//init face
 	p := pond.NewPond()
 
+	//get current path
+	curPath, err := os.Getwd()
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	dataPath := fmt.Sprintf("%v/%v", curPath, DataDir)
+
 	//set root path
-	err := p.SetRootPath(DataPath)
+	err = p.SetRootPath(dataPath)
 	if err != nil {
 		log.Println(err)
 		return

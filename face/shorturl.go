@@ -8,8 +8,7 @@ import (
 )
 
 /*
- * face of short url, implement of `IShortUrl`
- *
+ * face of short url
  * - gen unique short url
  */
 

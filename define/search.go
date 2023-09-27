@@ -9,6 +9,7 @@ const (
 //doc filed
 const (
 	SearchFieldOfCreateAt = "createAt"
+	SearchFieldOfRemoved = "removed"
 )
 
 //default

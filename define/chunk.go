@@ -1,15 +1,14 @@
 package define
 
-//sub dir
-const (
-	SubDirOfSearch = "search"
-	SubDirOfFile = "file"
-)
-
 //others
 const (
 	FileErrOfEOF = "EOF"
 	FilePerm = 0755
+	ChunkFileMetaSaveRate = 1 //xx seconds
+)
+
+//file para
+const (
 	ChunkMetaFilePara = "chunk-%v.meta" //chunk meta file
 	ChunkDataFilePara = "chunk-%v.data" //chunk data file
 	TempZipFilePara = "%s/%s-%d.zip" //path/zipFile
@@ -25,10 +24,8 @@ const (
 
 //default value
 const (
-	DefaultRootPath = "./"
 	DefaultChunkReadProcess = 3
 	DefaultChunkChanSize = 1024
 	DefaultChunkBlockSize = 128 //min block data size
 	DefaultChunkMaxSize = DataSizeOfTB //one TB
-	DefaultChunkNode = "chunk"
 )

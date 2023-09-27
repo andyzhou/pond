@@ -2,9 +2,10 @@ module github.com/andyzhou/pond
 
 go 1.19
 
+require github.com/andyzhou/tinysearch v0.0.0-20230915043404-0bca8937c1b4
+
 require (
 	github.com/RoaringBitmap/roaring v0.9.4 // indirect
-	github.com/andyzhou/tinysearch v0.0.0-20230915043404-0bca8937c1b4 // indirect
 	github.com/bits-and-blooms/bitset v1.2.0 // indirect
 	github.com/blevesearch/bleve/v2 v2.3.8 // indirect
 	github.com/blevesearch/bleve_index_api v1.0.5 // indirect
@@ -22,7 +23,6 @@ require (
 	github.com/blevesearch/zapx/v13 v13.3.7 // indirect
 	github.com/blevesearch/zapx/v14 v14.3.7 // indirect
 	github.com/blevesearch/zapx/v15 v15.3.10 // indirect
-	github.com/casbin/casbin v1.9.1 // indirect
 	github.com/golang/geo v0.0.0-20210211234256-740aa86cb551 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/golang/snappy v0.0.2 // indirect

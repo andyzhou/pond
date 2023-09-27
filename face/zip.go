@@ -59,12 +59,12 @@ func (f *Zip) PopZipFiles(
 		//try open sub file
 		rc, subErr := file.Open()
 		if subErr != nil {
-			log.Fatal(err)
+			log.Println(err)
 		}
 		buffer := bytes.NewBuffer(nil)
 		_, err = io.Copy(buffer, rc)
 		if err != nil {
-			log.Fatal(err)
+			log.Println(err)
 		}
 		//run call back
 		if cbForWrite != nil {

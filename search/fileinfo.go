@@ -10,6 +10,7 @@ import (
 
 /*
  * file info search face
+ * - file short url as primary key
  */
 
 //face info

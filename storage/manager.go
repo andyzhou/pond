@@ -107,11 +107,16 @@ func (f *Manager) GetActiveChunk() (*Chunk, error) {
 	return target, nil
 }
 
+//set lazy mode
+func (f *Manager) SetLazyMode(switcher bool) {
+	f.meta.SetLazyMode(switcher)
+}
+
 //set root path
 func (f *Manager) SetRootPath(path string) error {
 	//check
 	if f.initDone {
-		return errors.New("path had init")
+		return nil
 	}
 
 	//init meta
