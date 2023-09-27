@@ -71,6 +71,7 @@ type Chunk struct {
 func NewChunk(
 			rootPath string,
 			chunkFileId int64,
+			lazyMode bool,
 			readProcesses ...int,
 		) *Chunk {
 	//detect read process number
@@ -94,7 +95,7 @@ func NewChunk(
 		metaFilePath: chunkMetaFile,
 		dataFilePath: fmt.Sprintf("%v/%v", rootPath, chunkDataFile),
 		blockSize: define.DefaultChunkBlockSize,
-		isLazyMode: false,
+		isLazyMode: lazyMode,
 		readProcesses: readProcess,
 		readChan: make(chan ChunkReadReq, define.DefaultChunkChanSize),
 		writeChan: make(chan ChunkWriteReq, define.DefaultChunkChanSize),

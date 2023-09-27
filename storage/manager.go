@@ -16,6 +16,7 @@ type Manager struct {
 	chunkMap sync.Map //chunkId -> *Chunk
 	chunkIds []int64 //used for fast rand pick
 	initDone bool
+	lazyMode bool
 }
 
 //construct
@@ -95,7 +96,7 @@ func (f *Manager) GetActiveChunk() (*Chunk, error) {
 
 		//init chunk face
 		rootPath := f.meta.GetRootPath()
-		target = NewChunk(rootPath, chunkId)
+		target = NewChunk(rootPath, chunkId, f.lazyMode)
 
 		//storage into run map
 		f.chunkMap.Store(chunkId, target)
@@ -113,14 +114,21 @@ func (f *Manager) SetLazyMode(switcher bool) {
 }
 
 //set root path
-func (f *Manager) SetRootPath(path string) error {
+func (f *Manager) SetRootPath(
+		path string,
+		isLazyModes ...bool) error {
 	//check
 	if f.initDone {
 		return nil
 	}
 
+	//detect
+	if isLazyModes != nil && len(isLazyModes) > 0 {
+		f.lazyMode = isLazyModes[0]
+	}
+
 	//init meta
-	err := f.meta.SetRootPath(path)
+	err := f.meta.SetRootPath(path, isLazyModes...)
 	if err != nil {
 		return err
 	}
@@ -135,7 +143,7 @@ func (f *Manager) SetRootPath(path string) error {
 	if metaObj != nil {
 		for _, chunkId := range metaObj.Chunks {
 			//init chunk face
-			chunkObj := NewChunk(f.meta.GetRootPath(), chunkId)
+			chunkObj := NewChunk(f.meta.GetRootPath(), chunkId, f.lazyMode)
 
 			//storage into run map
 			f.chunkMap.Store(chunkId, chunkObj)

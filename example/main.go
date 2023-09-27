@@ -38,7 +38,7 @@ func main() {
 	dataPath := fmt.Sprintf("%v/%v", curPath, DataDir)
 
 	//set root path
-	err = p.SetRootPath(dataPath)
+	err = p.SetRootPath(dataPath, true)
 	if err != nil {
 		log.Println(err)
 		return

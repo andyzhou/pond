@@ -52,6 +52,7 @@ func (f *Meta) Quit() {
 	if f.closeChan != nil {
 		close(f.closeChan)
 	}
+
 	//force save data
 	err := f.SaveMeta(true)
 	if err != nil {
@@ -145,13 +146,21 @@ func (f *Meta) SetChunkMaxSize(size int64) error {
 }
 
 //set root path and load gob file
-func (f *Meta) SetRootPath(path string) error {
+func (f *Meta) SetRootPath(
+			path string,
+			isLazyModes ...bool,
+		) error {
 	//check
 	if path == "" {
 		return errors.New("invalid path parameter")
 	}
 	if f.metaFile != "" {
 		return errors.New("path had setup")
+	}
+
+	//detect
+	if isLazyModes != nil && len(isLazyModes) > 0 {
+		f.lazySaveMode = isLazyModes[0]
 	}
 
 	//format file root path
@@ -170,6 +179,10 @@ func (f *Meta) SetRootPath(path string) error {
 
 	//check and load meta file
 	err = gob.Load(f.metaFile, &f.metaJson)
+	if err == nil {
+		//start main process
+		go f.runMainProcess()
+	}
 	return err
 }
 

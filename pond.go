@@ -82,6 +82,7 @@ func (f *Pond) WriteData(data []byte) (string, error) {
 }
 
 //set data root path
-func (f *Pond) SetRootPath(path string) error {
-	return f.storage.SetRootPath(path)
+//lazy mode used for inter data lazy save.
+func (f *Pond) SetRootPath(path string, isLazyModes ...bool) error {
+	return f.storage.SetRootPath(path, isLazyModes...)
 }

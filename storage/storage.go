@@ -251,9 +251,11 @@ func (f *Storage) SetLazyMode(switcher bool) {
 }
 
 //set root path
-func (f *Storage) SetRootPath(path string) error {
+func (f *Storage) SetRootPath(
+		path string,
+		isLazyModes ...bool) error {
 	//manager setup
-	err := f.manager.SetRootPath(path)
+	err := f.manager.SetRootPath(path, isLazyModes...)
 	if err != nil {
 		return err
 	}
