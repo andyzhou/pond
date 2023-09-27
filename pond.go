@@ -3,7 +3,6 @@ package pond
 import (
 	"github.com/andyzhou/pond/json"
 	"github.com/andyzhou/pond/storage"
-	"sync"
 )
 
 /*
@@ -11,23 +10,9 @@ import (
  * - service one single node or group data
  */
 
-//global variable
-var (
-	_pond *Pond
-	_pondOnce sync.Once
-)
-
 //face info
 type Pond struct {
 	storage *storage.Storage
-}
-
-//get single instance
-func GetPond() *Pond {
-	_pondOnce.Do(func() {
-		_pond = NewPond()
-	})
-	return _pond
 }
 
 //construct

@@ -14,7 +14,7 @@ const (
 //init pond
 func InitPond() (*pond.Pond, error) {
 	//init face
-	p := pond.GetPond()
+	p := pond.NewPond()
 
 	//get current path
 	curPath, err := os.Getwd()
