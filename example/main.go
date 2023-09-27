@@ -25,6 +25,14 @@ func readData(p *pond.Pond) {
 	log.Printf("read data, data:%v, err:%v\n", string(dataByte), err)
 }
 
+//get file info list
+func getFileInfos(p *pond.Pond) {
+	page := 1
+	pageSize := 10
+	total, recSlice, err := p.GetFiles(page, pageSize)
+	log.Printf("files list, total:%v, recSlice:%v, err:%v\n", total, recSlice, err)
+}
+
 func main() {
 	//init face
 	p := pond.NewPond()
@@ -44,8 +52,11 @@ func main() {
 		return
 	}
 
+	//file info list
+	getFileInfos(p)
+
 	//read data
-	readData(p)
+	//readData(p)
 
 	//write data
 	//writeData(p)
