@@ -12,15 +12,15 @@ package json
 type ChunkFileJson struct {
 	Id int64 `json:"id"` //unique chunk file id
 	Size int64 `json:"size"` //current size
-	Files int32 `json:"files"` //total files
+	Files int64 `json:"files"` //total files
+	MaxSize int64 `json:"maxSize"` //max allow size
 	BaseJson
 }
 
-//meta snap json
-//all chunk simple info
+//all chunks meta snap json
 type MetaJson struct {
 	FileId int64 `json:"fileId"` //inter dynamic data file id
-	ChunkId int64 `json:"chunkId"` //inter chunk file id
+	ChunkId int64 `json:"chunkId"` //inter chunk storage file id
 	Chunks []int64 `json:"chunks"` //active chunk file ids
 	BaseJson
 }

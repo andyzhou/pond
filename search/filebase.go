@@ -5,7 +5,9 @@ import (
 	"github.com/andyzhou/pond/define"
 	"github.com/andyzhou/pond/json"
 	"github.com/andyzhou/tinysearch"
+	tDefine "github.com/andyzhou/tinysearch/define"
 	tJson "github.com/andyzhou/tinysearch/json"
+	"math"
 )
 
 /*
@@ -25,6 +27,57 @@ func NewFileBase(ts *tinysearch.Service) *FileBase {
 	}
 	this.interInit()
 	return this
+}
+
+//get batch filter by removed and sort by blocks
+func (f *FileBase) GetBathByBlocks(
+			dataSize int64,
+			pageSize int,
+			multiples ...int,
+		) (int64, []*json.FileBaseJson, error) {
+	var (
+		multiple int64 = 2
+	)
+	
+	//detect
+	if multiples != nil && len(multiples) > 0 {
+		multiple = int64(multiples[0])
+	}
+	if multiple < define.DefaultChunkBlockMultiple {
+		multiple = define.DefaultChunkBlockMultiple
+	}
+	page := define.DefaultPage
+
+	//calculate block size
+	realBlocksMin := int64(math.Ceil(float64(dataSize) / float64(define.DefaultChunkBlockSize)))
+	realBlocksMax := realBlocksMin * multiple
+
+	//setup filters
+	filters := make([]*tJson.FilterField, 0)
+	filterByRemoved := &tJson.FilterField{
+		Kind: tDefine.FilterKindBoolean,
+		Field: define.SearchFieldOfRemoved,
+		IsMust: true,
+	}
+	filterByBlocks := &tJson.FilterField{
+		Kind: tDefine.FilterKindNumericRange,
+		Field: define.SearchFieldOfBlocks,
+		MinFloatVal: float64(realBlocksMin),
+		MaxFloatVal: float64(realBlocksMax),
+		IsMust: true,
+	}
+	filters = append(filters, filterByRemoved, filterByBlocks)
+
+	//setup sorts
+	//sort by blocks asc
+	sorts := make([]*tJson.SortField, 0)
+	sortByBlocks := &tJson.SortField{
+		Field: define.SearchFieldOfBlocks,
+	}
+	sorts = append(sorts, sortByBlocks)
+
+	//call base func
+	return f.QueryBatch(filters, sorts, page, pageSize)
 }
 
 //get batch info

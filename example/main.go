@@ -5,16 +5,17 @@ import (
 	"github.com/andyzhou/pond"
 	"log"
 	"os"
+	"time"
 )
 
 const (
 	DataDir = "./private"
-	ShortUrl = "EVBJFp" //"dMVRt8"
+	ShortUrl = "044Q58" //"dMVRt8"
 )
 
 //write data
 func writeData(p *pond.Pond) {
-	data := []byte("3hello")
+	data := []byte(fmt.Sprintf("hello-%v", time.Now().Unix()))
 	shortUrl, subErr := p.WriteData(data)
 	log.Printf("shortUrl:%v, err:%v\n", shortUrl, subErr)
 }
@@ -56,10 +57,12 @@ func main() {
 	getFileInfos(p)
 
 	//read data
-	//readData(p)
+	readData(p)
 
 	//write data
-	//writeData(p)
+	//for i := 0; i < 50; i++ {
+	//	writeData(p)
+	//}
 
 	//quit
 	p.Quit()

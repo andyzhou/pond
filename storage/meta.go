@@ -22,7 +22,6 @@ import (
 type Meta struct {
 	rootPath string
 	metaFile string
-	maxChunkSize int64
 	metaJson *json.MetaJson //running data
 	metaUpdated bool
 	lazySaveMode bool
@@ -38,7 +37,6 @@ func NewMeta() *Meta {
 	//self init
 	this := &Meta{
 		metaJson:     json.NewMetaJson(),
-		maxChunkSize: define.DefaultChunkMaxSize,
 		objLocker:    sync.RWMutex{},
 		tickChan: make(chan struct{}, 1),
 		closeChan: make(chan bool, 1),
@@ -104,11 +102,12 @@ func (f *Meta) SaveMeta(isForces ...bool) error {
 
 	//check
 	if f.lazySaveMode && !isForce {
-		//do nothing
+		//do nothing, just update switcher
+		f.metaUpdated = false
 		return nil
 	}
 
-	//save meta data
+	//force save meta data
 	err := f.saveMetaData()
 	return err
 }
@@ -134,15 +133,6 @@ func (f *Meta) SetLazyMode(switcher bool) {
 	//close lazy mode
 	f.lazySaveMode = false
 	f.closeChan <- true
-}
-
-//set chunk max size
-func (f *Meta) SetChunkMaxSize(size int64) error {
-	if size <= 0 {
-		return errors.New("invalid size parameter")
-	}
-	f.maxChunkSize = size
-	return nil
 }
 
 //set root path and load gob file
@@ -235,11 +225,12 @@ func (f *Meta) runMainProcess() {
 func (f *Meta) autoSaveMeta() {
 	f.Lock()
 	defer f.Unlock()
-	if !f.metaUpdated {
+	if f.metaUpdated {
+		//has updated, do nothing
 		return
 	}
 	f.saveMetaData()
-	f.metaUpdated = false
+	f.metaUpdated = true
 }
 
 //save meta data

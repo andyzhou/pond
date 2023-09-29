@@ -66,7 +66,13 @@ func (f *Pond) WriteData(data []byte) (string, error) {
 	return f.storage.WriteData(data)
 }
 
-//set data root path
+//set new chunk file max size
+//size is bytes value
+func (f *Pond) SetChunkFileMaxSize(size int64)  error {
+	return f.storage.SetChunkFileMaxSize(size)
+}
+
+//set data root path (must call func)
 //lazy mode used for inter data lazy save.
 func (f *Pond) SetRootPath(path string, isLazyModes ...bool) error {
 	return f.storage.SetRootPath(path, isLazyModes...)

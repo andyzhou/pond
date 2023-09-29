@@ -13,6 +13,7 @@ import (
 /*
  * inter storage face
  * - include meta and chunk data
+ * - write request in process
  */
 
 //global variable
@@ -248,6 +249,12 @@ func (f *Storage) WriteData(data []byte) (string, error) {
 //set lazy mode
 func (f *Storage) SetLazyMode(switcher bool) {
 	f.manager.SetLazyMode(switcher)
+}
+
+//set new chunk file max size
+//size is bytes value
+func (f *Storage) SetChunkFileMaxSize(size int64)  error {
+	return f.manager.SetChunkFileMaxSize(size)
 }
 
 //set root path
