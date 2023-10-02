@@ -63,10 +63,16 @@ func (f *Pond) ReadData(
 	return f.storage.ReadData(shortUrl, offsetAndLength...)
 }
 
-//write data
+//write new data
 //return shortUrl, error
 func (f *Pond) WriteData(data []byte) (string, error) {
 	return f.storage.WriteData(data)
+}
+
+//over write data
+//fix chunk size config should be true
+func (f *Pond) OverWriteData(dataId interface{}, data []byte) error {
+	return f.storage.OverWriteData(dataId, data)
 }
 
 //set config

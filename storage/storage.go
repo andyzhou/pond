@@ -43,7 +43,7 @@ func (f *Storage) GetFilesInfo(
 		) (int64, []*json.FileInfoJson, error) {
 	//check
 	if !f.initDone {
-		return 0, nil, errors.New("hasn't setup root path")
+		return 0, nil, errors.New("config didn't setup")
 	}
 	//search file info
 	fileInfoSearch := search.GetSearch().GetFileInfo()
@@ -53,11 +53,11 @@ func (f *Storage) GetFilesInfo(
 //del real data
 func (f *Storage) DelRealData(shortUrl string) error {
 	//check
-	if !f.initDone {
-		return errors.New("hasn't setup root path")
-	}
 	if shortUrl == "" {
 		return errors.New("invalid parameter")
+	}
+	if !f.initDone {
+		return errors.New("config didn't setup")
 	}
 
 	//get relate search
@@ -89,11 +89,11 @@ func (f *Storage) DelRealData(shortUrl string) error {
 //just remove file info from search
 func (f *Storage) DeleteData(shortUrl string) error {
 	//check
-	if !f.initDone {
-		return errors.New("hasn't setup root path")
-	}
 	if shortUrl == "" {
 		return errors.New("invalid parameter")
+	}
+	if !f.initDone {
+		return errors.New("config didn't setup")
 	}
 
 	//del file info
@@ -113,11 +113,11 @@ func (f *Storage) ReadData(
 		assignedOffset, assignedLength int64
 	)
 	//check
-	if !f.initDone {
-		return nil, errors.New("hasn't setup root path")
-	}
 	if shortUrl == "" {
 		return nil, errors.New("invalid parameter")
+	}
+	if !f.initDone {
+		return nil, errors.New("config didn't setup")
 	}
 
 	//get file info
@@ -164,18 +164,18 @@ func (f *Storage) ReadData(
 	return fileData, subErrTwo
 }
 
-//write data
+//write new data
 //return shortUrl, error
 func (f *Storage) WriteData(data []byte) (string, error) {
 	var (
 		shortUrl string
 	)
 	//check
-	if !f.initDone {
-		return shortUrl, errors.New("hasn't setup root path")
-	}
 	if data == nil {
 		return shortUrl, errors.New("invalid parameter")
+	}
+	if !f.initDone {
+		return shortUrl, errors.New("config didn't setup")
 	}
 
 	//gen and check base file by md5
@@ -239,6 +239,13 @@ func (f *Storage) WriteData(data []byte) (string, error) {
 	//save into search
 	err = fileInfoSearch.AddOne(fileInfoObj)
 	return shortUrl, err
+}
+
+//over write data
+//data id will be short url input value
+//fix chunk size config should be true
+func (f *Storage) OverWriteData(dataId interface{}, data []byte) error {
+	return nil
 }
 
 //set config
