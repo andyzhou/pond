@@ -2,11 +2,11 @@ package storage
 
 import (
 	"errors"
+	"github.com/andyzhou/pond/conf"
 	"github.com/andyzhou/pond/json"
 	"github.com/andyzhou/pond/search"
 	"github.com/andyzhou/pond/util"
 	"net/http"
-	"sync"
 	"time"
 )
 
@@ -16,14 +16,9 @@ import (
  * - write request in process
  */
 
-//global variable
-var (
-	_storage *Storage
-	_storageOnce sync.Once
-)
-
 //face info
 type Storage struct {
+	cfg *conf.Config //reference
 	manager *Manager
 	initDone bool
 	util.Util
@@ -246,29 +241,21 @@ func (f *Storage) WriteData(data []byte) (string, error) {
 	return shortUrl, err
 }
 
-//set lazy mode
-func (f *Storage) SetLazyMode(switcher bool) {
-	f.manager.SetLazyMode(switcher)
-}
-
-//set new chunk file max size
-//size is bytes value
-func (f *Storage) SetChunkFileMaxSize(size int64)  error {
-	return f.manager.SetChunkFileMaxSize(size)
-}
-
-//set root path
-func (f *Storage) SetRootPath(
-		path string,
-		isLazyModes ...bool) error {
-	//manager setup
-	err := f.manager.SetRootPath(path, isLazyModes...)
+//set config
+func (f *Storage) SetConfig(cfg *conf.Config) error {
+	//check
+	if cfg == nil || cfg.DataPath == "" {
+		return errors.New("invalid parameter")
+	}
+	//search setup
+	err := search.GetSearch().SetRootPath(cfg.DataPath)
 	if err != nil {
 		return err
 	}
 
-	//search setup
-	err = search.GetSearch().SetRootPath(path)
+	//manager setup
+	f.cfg = cfg
+	err = f.manager.SetConfig(cfg)
 	if err != nil {
 		return err
 	}

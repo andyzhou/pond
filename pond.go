@@ -1,6 +1,9 @@
 package pond
 
 import (
+	"errors"
+	"github.com/andyzhou/pond/conf"
+	"github.com/andyzhou/pond/define"
 	"github.com/andyzhou/pond/json"
 	"github.com/andyzhou/pond/storage"
 )
@@ -66,14 +69,22 @@ func (f *Pond) WriteData(data []byte) (string, error) {
 	return f.storage.WriteData(data)
 }
 
-//set new chunk file max size
-//size is bytes value
-func (f *Pond) SetChunkFileMaxSize(size int64)  error {
-	return f.storage.SetChunkFileMaxSize(size)
+//set config
+func (f *Pond) SetConfig(cfg *conf.Config) error {
+	//check
+	if cfg == nil || cfg.DataPath == "" {
+		return errors.New("invalid parameter")
+	}
+	if cfg.ChunkSizeMax <= 0 {
+		cfg.ChunkSizeMax = define.DefaultChunkMaxSize
+	}
+	if cfg.ChunkBlockSize <= 0 {
+		cfg.ChunkBlockSize = define.DefaultChunkBlockSize
+	}
+	return f.storage.SetConfig(cfg)
 }
 
-//set data root path (must call func)
-//lazy mode used for inter data lazy save.
-func (f *Pond) SetRootPath(path string, isLazyModes ...bool) error {
-	return f.storage.SetRootPath(path, isLazyModes...)
+//gen new config
+func (f *Pond) GenConfig() *conf.Config {
+	return &conf.Config{}
 }

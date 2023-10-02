@@ -7,7 +7,6 @@ import (
 	"github.com/andyzhou/tinysearch"
 	tDefine "github.com/andyzhou/tinysearch/define"
 	tJson "github.com/andyzhou/tinysearch/json"
-	"math"
 )
 
 /*
@@ -30,27 +29,18 @@ func NewFileBase(ts *tinysearch.Service) *FileBase {
 }
 
 //get batch filter by removed and sort by blocks
-func (f *FileBase) GetBathByBlocks(
-			dataSize int64,
+func (f *FileBase) GetBatchByBlocks(
+			blocksMin, blocksMax int64,
 			pageSize int,
-			multiples ...int,
 		) (int64, []*json.FileBaseJson, error) {
-	var (
-		multiple int64 = 2
-	)
-	
-	//detect
-	if multiples != nil && len(multiples) > 0 {
-		multiple = int64(multiples[0])
+	//check
+	if blocksMin <= 0 || blocksMax <= blocksMin {
+		return 0, nil, errors.New("invalid parameter")
 	}
-	if multiple < define.DefaultChunkBlockMultiple {
-		multiple = define.DefaultChunkBlockMultiple
+	if pageSize <= 0 {
+		pageSize = define.DefaultPageSize
 	}
 	page := define.DefaultPage
-
-	//calculate block size
-	realBlocksMin := int64(math.Ceil(float64(dataSize) / float64(define.DefaultChunkBlockSize)))
-	realBlocksMax := realBlocksMin * multiple
 
 	//setup filters
 	filters := make([]*tJson.FilterField, 0)
@@ -62,11 +52,45 @@ func (f *FileBase) GetBathByBlocks(
 	filterByBlocks := &tJson.FilterField{
 		Kind: tDefine.FilterKindNumericRange,
 		Field: define.SearchFieldOfBlocks,
-		MinFloatVal: float64(realBlocksMin),
-		MaxFloatVal: float64(realBlocksMax),
+		MinFloatVal: float64(blocksMin),
+		MaxFloatVal: float64(blocksMax),
 		IsMust: true,
 	}
 	filters = append(filters, filterByRemoved, filterByBlocks)
+
+	//setup sorts
+	//sort by blocks asc
+	sorts := make([]*tJson.SortField, 0)
+	sortByBlocks := &tJson.SortField{
+		Field: define.SearchFieldOfBlocks,
+	}
+	sorts = append(sorts, sortByBlocks)
+
+	//call base func
+	return f.QueryBatch(filters, sorts, page, pageSize)
+}
+
+//get batch removed blocks
+func (f *FileBase) GetBatchByRemoved(
+			page, pageSize int,
+		) (int64, []*json.FileBaseJson, error) {
+	//check
+	if page <= 0 {
+		page = define.DefaultPage
+	}
+	if pageSize <= 0 {
+		pageSize = define.DefaultPageSize
+	}
+
+	//setup filters
+	filters := make([]*tJson.FilterField, 0)
+	filterByRemoved := &tJson.FilterField{
+		Kind: tDefine.FilterKindBoolean,
+		Field: define.SearchFieldOfRemoved,
+		Val: true,
+		IsMust: true,
+	}
+	filters = append(filters, filterByRemoved)
 
 	//setup sorts
 	//sort by blocks asc
@@ -160,6 +184,25 @@ func (f *FileBase) GetOne(md5Val string) (*json.FileBaseJson, error) {
 	fileBaseJson := json.NewFileBaseJson()
 	err = fileBaseJson.Decode(hitDoc.OrgJson, fileBaseJson)
 	return fileBaseJson, err
+}
+
+//del one base file info
+func (f *FileBase) DelOne(md5 string) error {
+	//check
+	if md5 == "" {
+		return errors.New("invalid parameter")
+	}
+	if f.ts == nil {
+		return errors.New("inter search engine not init")
+	}
+
+	//get relate face
+	index := f.ts.GetIndex(define.SearchIndexOfFileBase)
+	doc := f.ts.GetDoc()
+
+	//del doc
+	err := doc.RemoveDoc(index, md5)
+	return err
 }
 
 //add one base file info

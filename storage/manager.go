@@ -3,6 +3,7 @@ package storage
 import (
 	"errors"
 	"github.com/andyzhou/pond/chunk"
+	"github.com/andyzhou/pond/conf"
 	"github.com/andyzhou/pond/define"
 	"sync"
 	"sync/atomic"
@@ -15,7 +16,10 @@ import (
 
 //face info
 type Manager struct {
+	cfg *conf.Config //reference
+	chunk *Chunk
 	meta *Meta
+	freeFileMap sync.Map //md5 -> *json.FileBaseJson
 	chunkMap sync.Map //chunkId -> *Chunk, active chunk file map
 	chunkMaxSize int64
 	chunks int32 //atomic count
@@ -27,7 +31,9 @@ type Manager struct {
 //construct
 func NewManager() *Manager {
 	this := &Manager{
+		chunk: NewChunk(),
 		meta: NewMeta(),
+		freeFileMap: sync.Map{},
 		chunkMap: sync.Map{},
 		chunkMaxSize: define.DefaultChunkMaxSize,
 	}
@@ -67,6 +73,8 @@ func (f *Manager) GetChunkById(id int64) (*chunk.Chunk, error) {
 	return nil, errors.New("no chunk obj")
 }
 
+//get
+
 //get active or create new chunk obj
 //used for write data
 func (f *Manager) GetActiveChunk() (*chunk.Chunk, error) {
@@ -96,8 +104,7 @@ func (f *Manager) GetActiveChunk() (*chunk.Chunk, error) {
 		chunkId := chunkFileObj.Id
 
 		//init chunk face
-		rootPath := f.meta.GetRootPath()
-		target = chunk.NewChunk(rootPath, chunkId, f.lazyMode)
+		target = chunk.NewChunk(chunkId, f.cfg)
 		target.SetChunkMaxSize(f.chunkMaxSize)
 
 		//storage into run map
@@ -109,37 +116,20 @@ func (f *Manager) GetActiveChunk() (*chunk.Chunk, error) {
 	return target, nil
 }
 
-//set lazy mode
-func (f *Manager) SetLazyMode(switcher bool) {
-	f.meta.SetLazyMode(switcher)
-}
-
-//set new chunk file max size
-//size is bytes value
-func (f *Manager) SetChunkFileMaxSize(size int64)  error {
-	if size <= 0 {
-		return errors.New("invalid size parameter")
-	}
-	f.chunkMaxSize = size
-	return nil
-}
-
-//set root path
-func (f *Manager) SetRootPath(
-		path string,
-		isLazyModes ...bool) error {
+//set config
+func (f *Manager) SetConfig(cfg *conf.Config) error {
 	//check
+	if cfg == nil || cfg.DataPath == "" {
+		return errors.New("invalid parameter")
+	}
 	if f.initDone {
 		return nil
 	}
-
-	//detect
-	if isLazyModes != nil && len(isLazyModes) > 0 {
-		f.lazyMode = isLazyModes[0]
-	}
+	f.cfg = cfg
+	f.chunkMaxSize = cfg.ChunkSizeMax
 
 	//init meta
-	err := f.meta.SetRootPath(path, isLazyModes...)
+	err := f.meta.SetConfig(cfg)
 	if err != nil {
 		return err
 	}
@@ -149,6 +139,9 @@ func (f *Manager) SetRootPath(
 		f.initDone = true
 	}()
 
+	//load removed chunk info
+	f.chunk.Load()
+
 	//load meta data obj into run env
 	metaObj := f.meta.GetMetaData()
 	if metaObj != nil {
@@ -156,7 +149,7 @@ func (f *Manager) SetRootPath(
 		chunks := int32(0)
 		for _, chunkId := range metaObj.Chunks {
 			//init chunk face
-			chunkObj := chunk.NewChunk(f.meta.GetRootPath(), chunkId, f.lazyMode)
+			chunkObj := chunk.NewChunk(chunkId, f.cfg)
 
 			//storage into run map
 			f.chunkMap.Store(chunkId, chunkObj)

@@ -46,8 +46,12 @@ func main() {
 	}
 	dataPath := fmt.Sprintf("%v/%v", curPath, DataDir)
 
-	//set root path
-	err = p.SetRootPath(dataPath, true)
+	//gen new config
+	cfg := p.GenConfig()
+	cfg.DataPath = dataPath
+
+	//set config
+	err = p.SetConfig(cfg)
 	if err != nil {
 		log.Println(err)
 		return

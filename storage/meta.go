@@ -3,6 +3,7 @@ package storage
 import (
 	"errors"
 	"fmt"
+	"github.com/andyzhou/pond/conf"
 	"github.com/andyzhou/pond/define"
 	"github.com/andyzhou/pond/face"
 	"github.com/andyzhou/pond/json"
@@ -20,11 +21,10 @@ import (
 
 //face info
 type Meta struct {
-	rootPath string
+	cfg *conf.Config //reference
 	metaFile string
 	metaJson *json.MetaJson //running data
 	metaUpdated bool
-	lazySaveMode bool
 	objLocker sync.RWMutex
 	tickChan chan struct{}
 	closeChan chan bool
@@ -101,7 +101,7 @@ func (f *Meta) SaveMeta(isForces ...bool) error {
 	}
 
 	//check
-	if f.lazySaveMode && !isForce {
+	if f.cfg.LazyMode && !isForce {
 		//do nothing, just update switcher
 		f.metaUpdated = false
 		return nil
@@ -112,59 +112,31 @@ func (f *Meta) SaveMeta(isForces ...bool) error {
 	return err
 }
 
-//get root path
-func (f *Meta) GetRootPath() string {
-	return f.rootPath
-}
-
-//set lazy save meta file mode
-func (f *Meta) SetLazyMode(switcher bool) {
-	//check
-	if (switcher && f.lazySaveMode) || (!switcher && !f.lazySaveMode) {
-		//same value, do nothing
-		return
-	}
-	if switcher && !f.lazySaveMode {
-		//start lazy mode
-		f.lazySaveMode = true
-		go f.runMainProcess()
-		return
-	}
-	//close lazy mode
-	f.lazySaveMode = false
-	f.closeChan <- true
-}
-
-//set root path and load gob file
-func (f *Meta) SetRootPath(
-			path string,
-			isLazyModes ...bool,
+//set config
+func (f *Meta) SetConfig(
+			cfg *conf.Config,
 		) error {
 	//check
-	if path == "" {
-		return errors.New("invalid path parameter")
+	if cfg == nil || cfg.DataPath == "" {
+		return errors.New("invalid parameter")
 	}
 	if f.metaFile != "" {
 		return errors.New("path had setup")
 	}
-
-	//detect
-	if isLazyModes != nil && len(isLazyModes) > 0 {
-		f.lazySaveMode = isLazyModes[0]
-	}
+	f.cfg = cfg
 
 	//format file root path
-	f.rootPath = fmt.Sprintf("%v/%v", path, define.SubDirOfFile)
+	rootPath := fmt.Sprintf("%v/%v", cfg.DataPath, define.SubDirOfFile)
 
 	//check and create sub dir
-	err := f.CheckDir(f.rootPath)
+	err := f.CheckDir(rootPath)
 	if err != nil {
 		return err
 	}
 
 	//setup meta path and file
 	gob := face.GetFace().GetGob()
-	gob.SetRootPath(f.rootPath)
+	gob.SetRootPath(rootPath)
 	f.metaFile = define.ChunksMetaFile
 
 	//check and load meta file

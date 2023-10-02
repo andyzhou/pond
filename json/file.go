@@ -28,6 +28,7 @@ type FileBaseJson struct {
 	ChunkFileId int64 `json:"chunkFileId"` //chunk file id
 	Offset int64 `json:"offset"`
 	Blocks int64 `json:"blocks"`
+	Appoints int32 `json:"appoints"` //if value is zero, means need removed.
 	Removed bool `json:"removed"`
 	Backed bool `json:"backed"` //backed or not
 	CreateAt int64 `json:"createAt"`

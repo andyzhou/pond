@@ -3,6 +3,7 @@ package chunk
 import (
 	"errors"
 	"fmt"
+	"github.com/andyzhou/pond/conf"
 	"github.com/andyzhou/pond/define"
 	"github.com/andyzhou/pond/json"
 	"log"
@@ -21,6 +22,7 @@ import (
 
 //face info
 type Chunk struct {
+	cfg *conf.Config //reference
 	chunkObj *json.ChunkFileJson
 	file *os.File
 	chunkFileId int64
@@ -41,34 +43,19 @@ type Chunk struct {
 
 //construct
 func NewChunk(
-			rootPath string,
 			chunkFileId int64,
-			lazyMode bool,
-			readProcesses ...int,
+			cfg *conf.Config,
 		) *Chunk {
-	//detect read process number
-	var (
-		readProcess int
-	)
-	if readProcesses != nil && len(readProcesses) > 0 {
-		readProcess = readProcesses[0]
-	}
-	if readProcess <= 0 {
-		readProcess = define.DefaultChunkReadProcess
-	}
-
 	//format chunk file
 	chunkDataFile := fmt.Sprintf(define.ChunkDataFilePara, chunkFileId)
 	chunkMetaFile := fmt.Sprintf(define.ChunkMetaFilePara, chunkFileId)
 
 	//self init
 	this := &Chunk{
+		cfg: cfg,
 		chunkFileId: chunkFileId,
 		metaFilePath: chunkMetaFile,
-		dataFilePath: fmt.Sprintf("%v/%v", rootPath, chunkDataFile),
-		blockSize: define.DefaultChunkBlockSize,
-		isLazyMode: lazyMode,
-		readProcesses: readProcess,
+		dataFilePath: fmt.Sprintf("%v/%v/%v", cfg.DataPath, define.SubDirOfFile, chunkDataFile),
 		readChan: make(chan ReadReq, define.DefaultChunkChanSize),
 		writeChan: make(chan WriteReq, define.DefaultChunkChanSize),
 		readCloseChan: make(chan bool, 1),
