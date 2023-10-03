@@ -7,4 +7,5 @@ type Config struct {
 	ChunkBlockSize int64 //chunk block data size
 	FixedBlockSize bool //use fixed block size for data
 	LazyMode bool //switcher for lazy queue opt
+	CheckSame bool //switcher for check same data
 }

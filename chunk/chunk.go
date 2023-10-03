@@ -28,7 +28,6 @@ type Chunk struct {
 	chunkFileId int64
 	metaFilePath string
 	dataFilePath string
-	blockSize int64
 	readProcesses int
 	openDone bool
 	metaUpdated bool

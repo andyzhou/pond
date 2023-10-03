@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/andyzhou/pond"
+	"github.com/andyzhou/pond/define"
 	"log"
 	"os"
 	"time"
@@ -14,9 +15,9 @@ const (
 )
 
 //write data
-func writeData(p *pond.Pond) {
+func writeData(p *pond.Pond, shortUrls ...string) {
 	data := []byte(fmt.Sprintf("hello-%v", time.Now().Unix()))
-	shortUrl, subErr := p.WriteData(data)
+	shortUrl, subErr := p.WriteData(data, shortUrls...)
 	log.Printf("shortUrl:%v, err:%v\n", shortUrl, subErr)
 }
 
@@ -49,6 +50,8 @@ func main() {
 	//gen new config
 	cfg := p.GenConfig()
 	cfg.DataPath = dataPath
+	cfg.FixedBlockSize = true
+	cfg.ChunkBlockSize = define.DefaultChunkBlockSize
 
 	//set config
 	err = p.SetConfig(cfg)
@@ -61,9 +64,11 @@ func main() {
 	getFileInfos(p)
 
 	//read data
-	readData(p)
+	//readData(p)
 
 	//write data
+	writeData(p, ShortUrl)
+
 	//for i := 0; i < 50; i++ {
 	//	writeData(p)
 	//}

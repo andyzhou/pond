@@ -47,9 +47,6 @@ func (f *Pond) GetFiles(
 ////////////////////
 
 //del data
-func (f *Pond) DelRealData(shortUrl string) error {
-	return f.storage.DelRealData(shortUrl)
-}
 func (f *Pond) DelData(shortUrl string) error {
 	return f.storage.DeleteData(shortUrl)
 }
@@ -63,16 +60,11 @@ func (f *Pond) ReadData(
 	return f.storage.ReadData(shortUrl, offsetAndLength...)
 }
 
-//write new data
+//write new data, if assigned short url means overwrite data
+//if overwrite data, fix chunk size config should be true
 //return shortUrl, error
-func (f *Pond) WriteData(data []byte) (string, error) {
-	return f.storage.WriteData(data)
-}
-
-//over write data
-//fix chunk size config should be true
-func (f *Pond) OverWriteData(dataId interface{}, data []byte) error {
-	return f.storage.OverWriteData(dataId, data)
+func (f *Pond) WriteData(data []byte, shortUrls ...string) (string, error) {
+	return f.storage.WriteData(data, shortUrls...)
 }
 
 //set config

@@ -73,7 +73,10 @@ func (f *Manager) GetChunkById(id int64) (*chunk.Chunk, error) {
 	return nil, errors.New("no chunk obj")
 }
 
-//get
+//get running chunk obj
+func (f *Manager) GetRunningChunk() *Chunk {
+	return f.chunk
+}
 
 //get active or create new chunk obj
 //used for write data

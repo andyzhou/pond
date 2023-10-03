@@ -129,6 +129,7 @@ func (f *Chunk) directWriteData(
 			offsets ...int64,
 		) *WriteResp {
 	var (
+		assignedOffset bool
 		offset int64 = -1
 		resp WriteResp
 	)
@@ -149,14 +150,17 @@ func (f *Chunk) directWriteData(
 	}
 	if offset < 0 {
 		offset = f.chunkObj.Size
+	}else{
+		//assigned offset
+		assignedOffset = true
 	}
 
 	//calculate real block size
 	dataSize := float64(len(data))
-	realBlocks := int64(math.Ceil(dataSize / float64(f.blockSize)))
+	realBlocks := int64(math.Ceil(dataSize / float64(f.cfg.ChunkBlockSize)))
 
 	//create block buffer
-	realBlockSize := realBlocks * f.blockSize
+	realBlockSize := realBlocks * f.cfg.ChunkBlockSize
 	byteData := make([]byte, realBlockSize)
 	copy(byteData, data)
 
@@ -164,17 +168,21 @@ func (f *Chunk) directWriteData(
 	_, err := f.file.WriteAt(byteData, offset)
 	chunkOldSize := f.chunkObj.Size
 	if err == nil {
-		//update chunk obj
-		f.chunkObj.Files++
-		f.chunkObj.Size += realBlockSize
-
-		//update meta file
-		f.updateMetaFile()
+		if !assignedOffset {
+			//update chunk obj
+			f.chunkObj.Files++
+			f.chunkObj.Size += realBlockSize
+			//update meta file
+			f.updateMetaFile()
+		}
 	}
 
 	//format resp
 	resp.Err = err
 	resp.NewOffSet = chunkOldSize
 	resp.BlockSize = realBlockSize
+	if assignedOffset {
+		resp.NewOffSet = offset
+	}
 	return &resp
 }

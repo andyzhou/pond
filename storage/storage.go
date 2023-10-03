@@ -2,11 +2,15 @@ package storage
 
 import (
 	"errors"
+	"fmt"
 	"github.com/andyzhou/pond/conf"
+	"github.com/andyzhou/pond/define"
 	"github.com/andyzhou/pond/json"
 	"github.com/andyzhou/pond/search"
 	"github.com/andyzhou/pond/util"
+	"math/rand"
 	"net/http"
+	"sync"
 	"time"
 )
 
@@ -21,6 +25,7 @@ type Storage struct {
 	cfg *conf.Config //reference
 	manager *Manager
 	initDone bool
+	searchLocker sync.RWMutex
 	util.Util
 }
 
@@ -28,6 +33,7 @@ type Storage struct {
 func NewStorage() *Storage {
 	this := &Storage{
 		manager: NewManager(),
+		searchLocker: sync.RWMutex{},
 	}
 	return this
 }
@@ -50,41 +56,6 @@ func (f *Storage) GetFilesInfo(
 	return fileInfoSearch.GetBathByTime(page, pageSize)
 }
 
-//del real data
-func (f *Storage) DelRealData(shortUrl string) error {
-	//check
-	if shortUrl == "" {
-		return errors.New("invalid parameter")
-	}
-	if !f.initDone {
-		return errors.New("config didn't setup")
-	}
-
-	//get relate search
-	baseInfoSearch := search.GetSearch().GetFileBase()
-	fileInfoSearch := search.GetSearch().GetFileInfo()
-
-	//get file info
-	fileInfo, err := fileInfoSearch.GetOne(shortUrl)
-	if err != nil || fileInfo == nil {
-		return err
-	}
-
-	//get file base info
-	baseInfo, subErr := baseInfoSearch.GetOne(fileInfo.Md5)
-	if subErr != nil || baseInfo == nil {
-		return subErr
-	}
-	if baseInfo.Removed {
-		return errors.New("file has removed")
-	}
-
-	//mark base info status
-	baseInfo.Removed = true
-	err = baseInfoSearch.AddOne(baseInfo)
-	return err
-}
-
 //delete data
 //just remove file info from search
 func (f *Storage) DeleteData(shortUrl string) error {
@@ -96,9 +67,41 @@ func (f *Storage) DeleteData(shortUrl string) error {
 		return errors.New("config didn't setup")
 	}
 
-	//del file info
+	//get relate search
 	fileInfoSearch := search.GetSearch().GetFileInfo()
-	err := fileInfoSearch.DelOne(shortUrl)
+	fileBaseSearch := search.GetSearch().GetFileBase()
+
+	//get file info
+	fileInfo, _ := fileInfoSearch.GetOne(shortUrl)
+	if fileInfo == nil {
+		return errors.New("can't get file info by short url")
+	}
+
+	//get file base
+	fileBase, _ := fileBaseSearch.GetOne(fileInfo.Md5)
+	if fileBase == nil {
+		return errors.New("can't get file base info")
+	}
+
+	//decr appoint value
+	fileBase.Appoints--
+	if fileBase.Appoints <= 0 {
+		//update removed status
+		fileBase.Removed = true
+	}
+	//update file base info
+	err := fileBaseSearch.AddOne(fileBase)
+	if err != nil {
+		return err
+	}
+
+	//del file info
+	err = fileInfoSearch.DelOne(shortUrl)
+
+	//add removed info into run env
+	if fileBase.Removed && err == nil {
+		f.manager.GetRunningChunk().AddRemovedBaseInfo(fileBase)
+	}
 	return err
 }
 
@@ -164,88 +167,43 @@ func (f *Storage) ReadData(
 	return fileData, subErrTwo
 }
 
-//write new data
+//write new or old data
+//if assigned short url means overwrite old data
+//if overwrite data, fix chunk size config should be true
 //return shortUrl, error
-func (f *Storage) WriteData(data []byte) (string, error) {
+func (f *Storage) WriteData(
+			data []byte,
+			shortUrls ...string,
+		) (string, error) {
 	var (
 		shortUrl string
+		err error
 	)
 	//check
-	if data == nil {
+	if data == nil || len(data) <= 0 {
 		return shortUrl, errors.New("invalid parameter")
 	}
 	if !f.initDone {
 		return shortUrl, errors.New("config didn't setup")
 	}
 
-	//gen and check base file by md5
-	md5Val, err := f.Md5Sum(data)
-	if err != nil {
-		return shortUrl, err
+	//detect
+	if shortUrls != nil && len(shortUrls) > 0 {
+		shortUrl = shortUrls[0]
 	}
 
-	//pick active chunk
-	activeChunk, err := f.manager.GetActiveChunk()
-	if err != nil {
-		return shortUrl, err
+	//overwrite data should setup fix chunk size config
+	if shortUrl != "" && !f.cfg.FixedBlockSize {
+		return shortUrl, errors.New("config need set fix chunk size as true")
 	}
-
-	//get relate search
-	fileInfoSearch := search.GetSearch().GetFileInfo()
-	fileBaseSearch := search.GetSearch().GetFileBase()
-
-	//check file base info
-	fileBaseObj, _ := fileBaseSearch.GetOne(md5Val)
-	if fileBaseObj == nil {
-		//write file base byte data
-		resp := activeChunk.WriteFile(data)
-		if resp.Err != nil {
-			return shortUrl, err
-		}
-
-		//create new file base info
-		fileBaseObj = json.NewFileBaseJson()
-		fileBaseObj.Md5 = md5Val
-		fileBaseObj.ChunkFileId = activeChunk.GetFileId()
-		fileBaseObj.Size = int64(len(data))
-		fileBaseObj.Offset = resp.NewOffSet
-		fileBaseObj.Blocks = resp.BlockSize
-		fileBaseObj.CreateAt = time.Now().Unix()
-
-		//save into search
-		subErr := fileBaseSearch.AddOne(fileBaseObj)
-		if subErr != nil {
-			return shortUrl, subErr
-		}
+	if shortUrl != "" {
+		//over write data
+		err = f.overwriteData(shortUrl, data)
+	}else{
+		//write new data
+		shortUrl, err = f.writeNewData(data)
 	}
-
-	//gen new data short url
-	shortUrl, err = f.manager.GenNewShortUrl()
-	if err != nil {
-		return shortUrl, err
-	}
-
-	//create new file info
-	fileInfoObj := json.NewFileInfoJson()
-	fileInfoObj.ShortUrl = shortUrl
-	fileInfoObj.Md5 = md5Val
-	fileInfoObj.ContentType = http.DetectContentType(data)
-	fileInfoObj.Size = int64(len(data))
-	fileInfoObj.ChunkFileId = fileBaseObj.ChunkFileId
-	fileInfoObj.Offset = fileBaseObj.Offset
-	fileInfoObj.Blocks = fileBaseObj.Blocks
-	fileInfoObj.CreateAt = time.Now().Unix()
-
-	//save into search
-	err = fileInfoSearch.AddOne(fileInfoObj)
 	return shortUrl, err
-}
-
-//over write data
-//data id will be short url input value
-//fix chunk size config should be true
-func (f *Storage) OverWriteData(dataId interface{}, data []byte) error {
-	return nil
 }
 
 //set config
@@ -268,4 +226,182 @@ func (f *Storage) SetConfig(cfg *conf.Config) error {
 	}
 	f.initDone = true
 	return nil
+}
+
+///////////////
+//private func
+///////////////
+
+//overwrite old data
+//fix chunk size config should be true
+func (f *Storage) overwriteData(shortUrl string, data[]byte) error {
+	//check
+	if shortUrl == "" || data == nil {
+		return errors.New("invalid parameter")
+	}
+
+	//get relate search
+	fileInfoSearch := search.GetSearch().GetFileInfo()
+	fileBaseSearch := search.GetSearch().GetFileBase()
+
+	//get file info
+	fileInfoObj, _ := fileInfoSearch.GetOne(shortUrl)
+	if fileInfoObj == nil {
+		return errors.New("no file info for this short url")
+	}
+
+	dataLen := int64(len(data))
+	fileMd5 := fileInfoObj.Md5
+	offset := fileInfoObj.Offset
+	if fileInfoObj.Blocks < dataLen {
+		return errors.New("new file data size exceed old data")
+	}
+
+	//get file base info
+	fileBaseObj, _ := fileBaseSearch.GetOne(fileMd5)
+	if fileBaseObj == nil {
+		return errors.New("can't get file base info")
+	}
+
+	//get assigned chunk
+	activeChunk, err := f.manager.GetChunkById(fileInfoObj.ChunkFileId)
+	if err != nil {
+		return err
+	}
+	if activeChunk == nil {
+		return errors.New("can't get active chunk")
+	}
+
+	//overwrite chunk data
+	resp := activeChunk.WriteFile(data, offset)
+	if resp == nil {
+		return errors.New("can't get chunk write file response")
+	}
+	if resp.Err != nil {
+		return resp.Err
+	}
+
+	//update file base with locker
+	f.searchLocker.Lock()
+	defer f.searchLocker.Unlock()
+
+	fileBaseObj.Size = dataLen
+	fileBaseObj.Blocks = resp.BlockSize
+	fileBaseSearch.AddOne(fileBaseObj)
+
+	//update file info
+	fileInfoObj.Size = dataLen
+	fileInfoObj.Offset = resp.NewOffSet
+	err = fileInfoSearch.AddOne(fileInfoObj)
+	return err
+}
+
+//write new data
+//opt in process or use locker for atomic opt
+func (f *Storage) writeNewData(data []byte) (string, error) {
+	var (
+		fileMd5 string
+		shortUrl string
+		fileBaseObj *json.FileBaseJson
+		err error
+	)
+	//check
+	if data == nil {
+		return shortUrl, errors.New("invalid parameter")
+	}
+
+	//get relate search
+	fileInfoSearch := search.GetSearch().GetFileInfo()
+	fileBaseSearch := search.GetSearch().GetFileBase()
+
+	//gen and check base file by md5
+	if f.cfg.CheckSame {
+		//check same data, use data as md5 base value
+		fileMd5, err = f.Md5Sum(data)
+	}else{
+		//not check same data
+		//use rand num + time stamp as md5 base value
+		now := time.Now().UnixNano()
+		randInt := rand.Int63n(now)
+		md5ValBase := fmt.Sprintf("%v:%v", randInt, now)
+		fileMd5, err = f.Md5Sum([]byte(md5ValBase))
+	}
+	if err != nil || fileMd5 == "" {
+		return shortUrl, err
+	}
+
+	//pick active chunk
+	activeChunk, subErr := f.manager.GetActiveChunk()
+	if subErr != nil {
+		return shortUrl, subErr
+	}
+	if activeChunk == nil {
+		return shortUrl, errors.New("can't get active chunk")
+	}
+
+	needWriteChunkData := true
+	if f.cfg.CheckSame {
+		//need check same
+		//check file base info
+		fileBaseObj, _ = fileBaseSearch.GetOne(fileMd5)
+		if fileBaseObj != nil {
+			//inc appoint value of file base info
+			fileBaseObj.Appoints++
+			needWriteChunkData = false
+		}
+	}
+
+	//check or update file base info
+	if fileBaseObj == nil {
+		//create new file base info
+		fileBaseObj = json.NewFileBaseJson()
+		fileBaseObj.Md5 = fileMd5
+		fileBaseObj.ChunkFileId = activeChunk.GetFileId()
+		fileBaseObj.Size = int64(len(data))
+		fileBaseObj.Appoints = define.DefaultFileAppoint
+		fileBaseObj.CreateAt = time.Now().Unix()
+	}
+
+	if needWriteChunkData {
+		//write file base byte data
+		resp := activeChunk.WriteFile(data)
+		if resp == nil {
+			return shortUrl, errors.New("can't get chunk write file response")
+		}
+		if resp.Err != nil {
+			return shortUrl, err
+		}
+		//update file base
+		fileBaseObj.Offset = resp.NewOffSet
+		fileBaseObj.Blocks = resp.BlockSize
+	}
+
+	//gen new data short url
+	shortUrl, err = f.manager.GenNewShortUrl()
+	if err != nil {
+		return shortUrl, err
+	}
+
+	//save into search with locker
+	f.searchLocker.Lock()
+	defer f.searchLocker.Unlock()
+	err = fileBaseSearch.AddOne(fileBaseObj)
+	if err != nil {
+		return shortUrl, err
+	}
+
+	//create new file info
+	fileInfoObj := json.NewFileInfoJson()
+	fileInfoObj.ShortUrl = shortUrl
+	fileInfoObj.Md5 = fileMd5
+	fileInfoObj.ContentType = http.DetectContentType(data)
+	fileInfoObj.Size = int64(len(data))
+	fileInfoObj.ChunkFileId = fileBaseObj.ChunkFileId
+	fileInfoObj.Offset = fileBaseObj.Offset
+	fileInfoObj.Blocks = fileBaseObj.Blocks
+	fileInfoObj.CreateAt = time.Now().Unix()
+
+	//save into search
+	err = fileInfoSearch.AddOne(fileInfoObj)
+	return shortUrl, err
 }

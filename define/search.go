@@ -18,4 +18,5 @@ const (
 	DefaultPage = 1
 	DefaultPageSize = 20
 	DefaultPageSizeMax = 50
+	DefaultFileAppoint = 1
 )
