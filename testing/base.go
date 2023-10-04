@@ -23,7 +23,9 @@ func InitPond() (*pond.Pond, error) {
 	}
 	dataPath := fmt.Sprintf("%v/%v", curPath, DataDir)
 
-	//set root path
-	err = p.SetRootPath(dataPath)
+	//set config
+	cfg := p.GenConfig()
+	cfg.DataPath = dataPath
+
 	return p, err
 }
