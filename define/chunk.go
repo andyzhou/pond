@@ -5,7 +5,7 @@ const (
 	FileErrOfEOF = "EOF"
 	FilePerm = 0755
 	ChunkFileMetaSaveRate = 1 //xx seconds
-	ChunkMultiTryTimes = 5
+	ChunkMultiTryTimes = 3
 )
 
 //file para

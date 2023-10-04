@@ -67,7 +67,7 @@ func main() {
 	//readData(p)
 
 	//write data
-	writeData(p, ShortUrl)
+	writeData(p)
 
 	//for i := 0; i < 50; i++ {
 	//	writeData(p)

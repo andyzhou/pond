@@ -3,6 +3,7 @@ package storage
 import (
 	"errors"
 	"fmt"
+	"github.com/andyzhou/pond/chunk"
 	"github.com/andyzhou/pond/conf"
 	"github.com/andyzhou/pond/define"
 	"github.com/andyzhou/pond/json"
@@ -297,16 +298,20 @@ func (f *Storage) overwriteData(shortUrl string, data[]byte) error {
 }
 
 //write new data
-//opt in process or use locker for atomic opt
+//support removed data re-use
+//use locker for atomic opt
 func (f *Storage) writeNewData(data []byte) (string, error) {
 	var (
 		fileMd5 string
 		shortUrl string
 		fileBaseObj *json.FileBaseJson
+		activeChunk *chunk.Chunk
+		needRemovedMd5 string
+		offset int64 = -1
 		err error
 	)
 	//check
-	if data == nil {
+	if data == nil || len(data) <= 0 {
 		return shortUrl, errors.New("invalid parameter")
 	}
 
@@ -330,24 +335,47 @@ func (f *Storage) writeNewData(data []byte) (string, error) {
 		return shortUrl, err
 	}
 
-	//pick active chunk
-	activeChunk, subErr := f.manager.GetActiveChunk()
-	if subErr != nil {
-		return shortUrl, subErr
-	}
-	if activeChunk == nil {
-		return shortUrl, errors.New("can't get active chunk")
-	}
-
+	dataSize := int64(len(data))
 	needWriteChunkData := true
 	if f.cfg.CheckSame {
-		//need check same
-		//check file base info
+		//need check same, check file base info
 		fileBaseObj, _ = fileBaseSearch.GetOne(fileMd5)
 		if fileBaseObj != nil {
-			//inc appoint value of file base info
-			fileBaseObj.Appoints++
+			if !fileBaseObj.Removed {
+				//inc appoint value of file base info
+				fileBaseObj.Appoints++
+			}
 			needWriteChunkData = false
+		}
+	}
+
+	if needWriteChunkData {
+		//get removed chunk block data
+		removedFileBase, _ := f.manager.GetRunningChunk().GetAvailableRemovedFileBase(dataSize)
+		if removedFileBase != nil {
+			//set file base obj
+			fileBaseObj = removedFileBase
+			fileBaseObj.Size = dataSize
+			fileBaseObj.Removed = false
+			fileBaseObj.Appoints = define.DefaultFileAppoint
+
+			//others setup
+			offset = fileBaseObj.Offset
+			needRemovedMd5 = removedFileBase.Md5
+
+			//get active chunk by file id
+			activeChunk, err = f.manager.GetChunkById(fileBaseObj.ChunkFileId)
+		}
+
+		//check and pick active chunk
+		if activeChunk == nil {
+			activeChunk, err = f.manager.GetActiveChunk()
+		}
+		if err != nil {
+			return shortUrl, err
+		}
+		if activeChunk == nil {
+			return shortUrl, errors.New("can't get active chunk")
 		}
 	}
 
@@ -357,14 +385,14 @@ func (f *Storage) writeNewData(data []byte) (string, error) {
 		fileBaseObj = json.NewFileBaseJson()
 		fileBaseObj.Md5 = fileMd5
 		fileBaseObj.ChunkFileId = activeChunk.GetFileId()
-		fileBaseObj.Size = int64(len(data))
+		fileBaseObj.Size = dataSize
 		fileBaseObj.Appoints = define.DefaultFileAppoint
 		fileBaseObj.CreateAt = time.Now().Unix()
 	}
 
-	if needWriteChunkData {
+	if needWriteChunkData && activeChunk != nil {
 		//write file base byte data
-		resp := activeChunk.WriteFile(data)
+		resp := activeChunk.WriteFile(data, offset)
 		if resp == nil {
 			return shortUrl, errors.New("can't get chunk write file response")
 		}
@@ -388,6 +416,11 @@ func (f *Storage) writeNewData(data []byte) (string, error) {
 	err = fileBaseSearch.AddOne(fileBaseObj)
 	if err != nil {
 		return shortUrl, err
+	}
+
+	if needRemovedMd5 != "" {
+		//remove running removed file base info
+		f.manager.GetRunningChunk().RemoveRemovedFileBase(needRemovedMd5)
 	}
 
 	//create new file info

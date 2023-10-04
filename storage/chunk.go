@@ -27,6 +27,33 @@ func NewChunk() *Chunk {
 	return this
 }
 
+//remove file base info
+func (f *Chunk) RemoveRemovedFileBase(md5 string) error {
+	//check
+	if md5 == "" {
+		return errors.New("invalid parameter")
+	}
+	//remove or update element with locker
+	f.Lock()
+	defer f.Unlock()
+	removeIdx := -1
+	for idx, v := range f.removedFiles {
+		if v.Md5 == md5 {
+			removeIdx = idx
+			break
+		}
+	}
+	if removeIdx >= 0 {
+		//remove relate element
+		f.removedFiles = append(f.removedFiles[0:removeIdx], f.removedFiles[removeIdx:]...)
+	}
+	if len(f.removedFiles) <= 0 {
+		newFileSlice := make([]*json.FileBaseJson, 0)
+		f.removedFiles = newFileSlice
+	}
+	return nil
+}
+
 //update removed file base info
 func (f *Chunk) UpdateRemovedFileBase(
 		md5 string,
@@ -95,13 +122,12 @@ func (f *Chunk) GetAvailableRemovedFileBase(
 		return nil, nil
 	}
 
-	//setup data max size
-	dataSizeMaxBase := int64(float64(dataSize) * (1 + define.DefaultChunkMultiIncr))
-
 	//pick matched obj
 	tryTimes := 1
 	for {
 		found := false
+		//setup data max size
+		dataSizeMaxBase := int64(float64(dataSize) * (1 + float64(tryTimes) * define.DefaultChunkMultiIncr))
 		for _, v := range f.removedFiles {
 			if v.Blocks >= dataSize && v.Blocks < dataSizeMaxBase {
 				return v, nil
@@ -109,7 +135,6 @@ func (f *Chunk) GetAvailableRemovedFileBase(
 		}
 		if !found {
 			tryTimes++
-			dataSizeMaxBase = int64(float64(dataSize) * (1 + float64(tryTimes) * define.DefaultChunkMultiIncr))
 		}
 		if found || tryTimes >= define.ChunkMultiTryTimes {
 			//force break
