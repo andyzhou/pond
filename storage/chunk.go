@@ -122,7 +122,9 @@ func (f *Chunk) GetAvailableRemovedFileBase(
 		return nil, nil
 	}
 
-	//pick matched obj
+	//pick matched obj with locker
+	f.Lock()
+	defer f.Unlock()
 	tryTimes := 1
 	for {
 		found := false
@@ -145,14 +147,29 @@ func (f *Chunk) GetAvailableRemovedFileBase(
 }
 
 //add new removed file base info
-func (f *Chunk) AddRemovedBaseInfo(obj *json.FileBaseJson) error {
+func (f *Chunk) AddRemovedBaseInfo(
+			obj *json.FileBaseJson,
+		) error {
 	//check
 	if obj == nil {
 		return errors.New("invalid parameter")
 	}
+
+	//add base info with locker
 	f.Lock()
 	defer f.Unlock()
-	f.removedFiles = append(f.removedFiles, obj)
+	foundIdx := -1
+	for idx, v := range f.removedFiles {
+		if v.Md5 == obj.Md5 {
+			//found
+			foundIdx = idx
+			break
+		}
+	}
+	if foundIdx < 0 {
+		//not found, add new
+		f.removedFiles = append(f.removedFiles, obj)
+	}
 	return nil
 }
 
@@ -173,6 +190,10 @@ func (f *Chunk) loadRemovedFiles() {
 
 	//load matched data from search
 	fileBaseSearch := search.GetSearch().GetFileBase()
+
+	//add data locker
+	f.Lock()
+	defer f.Unlock()
 	for {
 		//get batch records
 		total, recSlice, err := fileBaseSearch.GetBatchByRemoved(page, pageSize)
