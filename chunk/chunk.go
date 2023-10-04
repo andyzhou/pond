@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/andyzhou/pond/conf"
 	"github.com/andyzhou/pond/define"
+	"github.com/andyzhou/pond/face"
 	"github.com/andyzhou/pond/json"
 	"log"
 	"os"
@@ -24,6 +25,7 @@ import (
 type Chunk struct {
 	cfg *conf.Config //reference
 	chunkObj *json.ChunkFileJson
+	gob *face.Gob
 	file *os.File
 	chunkFileId int64
 	metaFilePath string
@@ -52,6 +54,7 @@ func NewChunk(
 	//self init
 	this := &Chunk{
 		cfg: cfg,
+		gob: face.NewGob(),
 		chunkFileId: chunkFileId,
 		metaFilePath: chunkMetaFile,
 		dataFilePath: fmt.Sprintf("%v/%v/%v", cfg.DataPath, define.SubDirOfFile, chunkDataFile),
@@ -115,6 +118,10 @@ func (f *Chunk) genNewFileId() int64 {
 
 //inter init
 func (f *Chunk) interInit() {
+	//init gob
+	rootPath := fmt.Sprintf("%v/%v", f.cfg.DataPath, define.SubDirOfFile)
+	f.gob.SetRootPath(rootPath)
+
 	//load meta data
 	err := f.loadMetaFile()
 	if err != nil {

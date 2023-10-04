@@ -22,6 +22,8 @@ import (
 //face info
 type Meta struct {
 	cfg *conf.Config //reference
+	gob *face.Gob
+	shortUrl *face.ShortUrl
 	metaFile string
 	metaJson *json.MetaJson //running data
 	metaUpdated bool
@@ -37,6 +39,8 @@ func NewMeta() *Meta {
 	//self init
 	this := &Meta{
 		metaJson:     json.NewMetaJson(),
+		gob: face.NewGob(),
+		shortUrl: face.NewShortUrl(),
 		objLocker:    sync.RWMutex{},
 		tickChan: make(chan struct{}, 1),
 		closeChan: make(chan bool, 1),
@@ -62,7 +66,7 @@ func (f *Meta) Quit() {
 func (f *Meta) GenNewShortUrl() (string, error) {
 	newDataId := f.genNewFileDataId()
 	inputVal := fmt.Sprintf("%v:%v", newDataId, time.Now().UnixNano())
-	shortUrl, err := face.GetFace().GetShortUrl().Generator(inputVal)
+	shortUrl, err := f.shortUrl.Generator(inputVal)
 	return shortUrl, err
 }
 
@@ -135,12 +139,11 @@ func (f *Meta) SetConfig(
 	}
 
 	//setup meta path and file
-	gob := face.GetFace().GetGob()
-	gob.SetRootPath(rootPath)
+	f.gob.SetRootPath(rootPath)
 	f.metaFile = define.ChunksMetaFile
 
 	//check and load meta file
-	err = gob.Load(f.metaFile, &f.metaJson)
+	err = f.gob.Load(f.metaFile, &f.metaJson)
 	if err == nil {
 		//start main process
 		go f.runMainProcess()
@@ -212,11 +215,8 @@ func (f *Meta) saveMetaData() error {
 		return errors.New("meta gob file not setup")
 	}
 
-	//get gob face
-	gob := face.GetFace().GetGob()
-
 	//begin save meta with locker
-	err := gob.Store(f.metaFile, f.metaJson)
+	err := f.gob.Store(f.metaFile, f.metaJson)
 	if err != nil {
 		log.Printf("meta.SaveMeta failed, err:%v\n", err.Error())
 	}

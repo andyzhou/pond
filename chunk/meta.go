@@ -3,7 +3,6 @@ package chunk
 import (
 	"errors"
 	"github.com/andyzhou/pond/define"
-	"github.com/andyzhou/pond/face"
 	"github.com/andyzhou/pond/json"
 	"log"
 	"os"
@@ -70,8 +69,7 @@ func (f *Chunk) updateMetaFile(isForces ...bool) error {
 	}
 
 	//force save meta data
-	gob := face.GetFace().GetGob()
-	err := gob.Store(f.metaFilePath, f.chunkObj)
+	err := f.gob.Store(f.metaFilePath, f.chunkObj)
 	if err != nil {
 		log.Printf("chunk.writeData, update meta failed, err:%v\n", err.Error())
 	}
@@ -104,9 +102,8 @@ func (f *Chunk) openDataFile() error {
 //load chunk meta file
 func (f *Chunk) loadMetaFile() error {
 	//load god file
-	gob := face.GetFace().GetGob()
 	chunkObj := json.NewChunkFileJson()
-	err := gob.Load(f.metaFilePath, &chunkObj)
+	err := f.gob.Load(f.metaFilePath, &chunkObj)
 	if err != nil {
 		return err
 	}
