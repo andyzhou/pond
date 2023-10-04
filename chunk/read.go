@@ -4,6 +4,7 @@ import (
 	"errors"
 	"github.com/andyzhou/pond/define"
 	"log"
+	"time"
 )
 
 /*
@@ -109,6 +110,15 @@ func (f *Chunk) directReadData(offset, size int64) ([]byte, error) {
 	if offset < 0 || size <= 0 {
 		return nil, errors.New("invalid parameter")
 	}
+
+	//check and open file
+	if !f.IsOpened() {
+		err := f.openDataFile()
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	if f.file == nil {
 		return nil, errors.New("chunk file closed")
 	}
@@ -116,7 +126,8 @@ func (f *Chunk) directReadData(offset, size int64) ([]byte, error) {
 	//create block buffer
 	byteData := make([]byte, size)
 
-	//read real data
+	//read real data and sync active time
 	_, err := f.file.ReadAt(byteData, offset)
+	f.lastActiveTime = time.Now().Unix()
 	return byteData, err
 }

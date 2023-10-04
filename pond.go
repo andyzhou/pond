@@ -79,10 +79,17 @@ func (f *Pond) SetConfig(cfg *conf.Config) error {
 	if cfg.ChunkBlockSize <= 0 {
 		cfg.ChunkBlockSize = define.DefaultChunkBlockSize
 	}
+	if cfg.FileActiveHours <= 0 {
+		cfg.FileActiveHours = define.DefaultChunkActiveHours
+	}
 	return f.storage.SetConfig(cfg)
 }
 
 //gen new config
 func (f *Pond) GenConfig() *conf.Config {
-	return &conf.Config{}
+	return &conf.Config{
+		ChunkSizeMax: define.DefaultChunkMaxSize,
+		ChunkBlockSize: define.DefaultChunkBlockSize,
+		FileActiveHours: define.DefaultChunkActiveHours,
+	}
 }

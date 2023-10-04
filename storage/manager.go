@@ -5,8 +5,10 @@ import (
 	"github.com/andyzhou/pond/chunk"
 	"github.com/andyzhou/pond/conf"
 	"github.com/andyzhou/pond/define"
+	"log"
 	"sync"
 	"sync/atomic"
+	"time"
 )
 
 /*
@@ -19,12 +21,13 @@ type Manager struct {
 	cfg *conf.Config //reference
 	chunk *Chunk
 	meta *Meta
-	freeFileMap sync.Map //md5 -> *json.FileBaseJson
 	chunkMap sync.Map //chunkId -> *Chunk, active chunk file map
 	chunkMaxSize int64
 	chunks int32 //atomic count
 	initDone bool
 	lazyMode bool
+	tickChan chan struct{}
+	closeChan chan bool
 	sync.RWMutex
 }
 
@@ -33,10 +36,12 @@ func NewManager() *Manager {
 	this := &Manager{
 		chunk: NewChunk(),
 		meta: NewMeta(),
-		freeFileMap: sync.Map{},
 		chunkMap: sync.Map{},
 		chunkMaxSize: define.DefaultChunkMaxSize,
+		tickChan: make(chan struct{}, 1),
+		closeChan: make(chan bool, 1),
 	}
+	go this.runMainProcess()
 	return this
 }
 
@@ -51,6 +56,9 @@ func (f *Manager) Quit() {
 		return true
 	}
 	f.chunkMap.Range(sf)
+	if f.closeChan != nil {
+		close(f.closeChan)
+	}
 }
 
 //gen new file short url
@@ -92,7 +100,7 @@ func (f *Manager) GetActiveChunk() (*chunk.Chunk, error) {
 		//get active chunk
 		sf := func(k, v interface{}) bool {
 			chunkObj, _ := v.(*chunk.Chunk)
-			if chunkObj != nil && chunkObj.IsActive() {
+			if chunkObj != nil && chunkObj.IsAvailable() {
 				//found it
 				target = chunkObj
 				return false
@@ -162,4 +170,67 @@ func (f *Manager) SetConfig(cfg *conf.Config) error {
 		atomic.StoreInt32(&f.chunks, chunks)
 	}
 	return err
+}
+
+////////////////
+//private func
+////////////////
+
+//check un-active chunk files
+func (f *Manager) checkUnActiveChunkFiles() {
+	if f.chunks <= 0 {
+		return
+	}
+	sf := func(k, v interface{}) bool {
+		chunkObj, _ := v.(*chunk.Chunk)
+		if chunkObj != nil &&
+			chunkObj.IsOpened() &&
+			!chunkObj.IsActive() {
+			//close un-active chunk file
+			chunkObj.CloseFile()
+		}
+		return true
+	}
+	f.chunkMap.Range(sf)
+}
+
+//main process for check chunk files
+func (f *Manager) runMainProcess() {
+	var (
+		m any = nil
+	)
+	//defer
+	defer func() {
+		if err := recover(); err != m {
+			log.Printf("manager.mainProcess panic, err:%v\n", err)
+		}
+	}()
+
+	//ticker
+	ticker := func() {
+		sf := func() {
+			if f.tickChan != nil {
+				f.tickChan <- struct{}{}
+			}
+		}
+		time.AfterFunc(define.ManagerTickerSeconds * time.Second, sf)
+	}
+
+	//start first ticker
+	ticker()
+
+	//loop
+	for {
+		select {
+		case <- f.tickChan:
+			{
+				//check
+				f.checkUnActiveChunkFiles()
+				//start next ticker
+				ticker()
+			}
+		case <- f.closeChan:
+			return
+		}
+	}
 }

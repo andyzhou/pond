@@ -11,6 +11,7 @@ import (
 	"os"
 	"sync"
 	"sync/atomic"
+	"time"
 )
 
 /*
@@ -30,7 +31,7 @@ type Chunk struct {
 	chunkFileId int64
 	metaFilePath string
 	dataFilePath string
-	readProcesses int
+	lastActiveTime int64 //time stamp value
 	openDone bool
 	metaUpdated bool
 	isLazyMode bool
@@ -70,25 +71,29 @@ func NewChunk(
 
 //quit
 func (f *Chunk) Quit() {
-	if f.file != nil {
-		//force update meta data
-		f.updateMetaFile(true)
-		f.file.Close()
-		f.file = nil
-	}
-	if f.readCloseChan != nil {
-		close(f.readCloseChan)
-	}
-	if f.writeCloseChan != nil {
-		close(f.writeCloseChan)
-	}
+	//close opened data file
+	f.closeDataFile()
+
+	//meta close chan
 	if f.metaCloseChan != nil {
 		close(f.metaCloseChan)
 	}
 }
 
-//check active or not
+//check file opened or not
+func (f *Chunk) IsOpened() bool {
+	return f.openDone
+}
+
+//check file active time is available
 func (f *Chunk) IsActive() bool {
+	now := time.Now().Unix()
+	diff := now - f.lastActiveTime
+	return diff <= int64(f.cfg.FileActiveHours * define.SecondsOfHour)
+}
+
+//check size is available or not
+func (f *Chunk) IsAvailable() bool {
 	return f.chunkObj.Size < f.chunkObj.MaxSize
 }
 
@@ -105,6 +110,14 @@ func (f *Chunk) SetChunkMaxSize(size int64) error {
 //get file id
 func (f *Chunk) GetFileId() int64 {
 	return f.chunkObj.Id
+}
+
+//open、close relate files
+func (f *Chunk) OpenFile() error {
+	return f.openDataFile()
+}
+func (f *Chunk) CloseFile() error {
+	return f.closeDataFile()
 }
 
 /////////////////
@@ -128,11 +141,11 @@ func (f *Chunk) interInit() {
 		log.Printf("chunk load meta file %v failed, err:%v\n", f.metaFilePath, err.Error())
 	}
 
-	//open data file
-	err = f.openDataFile()
-	if err != nil {
-		log.Printf("chunk open data file %v failed, err:%v\n", f.dataFilePath, err.Error())
-	}
+	////open data file
+	//err = f.openDataFile()
+	//if err != nil {
+	//	log.Printf("chunk open data file %v failed, err:%v\n", f.dataFilePath, err.Error())
+	//}
 
 	//run save meta process
 	go f.saveMetaProcess()

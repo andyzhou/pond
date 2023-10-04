@@ -5,6 +5,7 @@ import (
 	"github.com/andyzhou/pond/define"
 	"log"
 	"math"
+	"time"
 )
 
 /*
@@ -139,6 +140,16 @@ func (f *Chunk) directWriteData(
 		resp.Err = errors.New("invalid parameter")
 		return &resp
 	}
+
+	//check and open file
+	if !f.IsOpened() {
+		err := f.openDataFile()
+		if err != nil {
+			resp.Err = err
+			return &resp
+		}
+	}
+
 	if f.file == nil {
 		resp.Err = errors.New("chunk file closed")
 		return &resp
@@ -167,6 +178,7 @@ func (f *Chunk) directWriteData(
 	//write block buffer data into chunk
 	_, err := f.file.WriteAt(byteData, offset)
 	chunkOldSize := f.chunkObj.Size
+	f.lastActiveTime = time.Now().Unix()
 	if err == nil {
 		if !assignedOffset {
 			//update chunk obj

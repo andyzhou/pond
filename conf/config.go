@@ -8,4 +8,5 @@ type Config struct {
 	FixedBlockSize bool //use fixed block size for data
 	LazyMode bool //switcher for lazy queue opt
 	CheckSame bool //switcher for check same data
+	FileActiveHours int32 //chunk file active hours
 }

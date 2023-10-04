@@ -5,7 +5,6 @@ import (
 	"github.com/andyzhou/pond/define"
 	"github.com/andyzhou/pond/json"
 	"log"
-	"os"
 	"time"
 )
 
@@ -75,28 +74,6 @@ func (f *Chunk) updateMetaFile(isForces ...bool) error {
 	}
 	f.metaUpdated = true
 	return err
-}
-
-//open chunk data file
-func (f *Chunk) openDataFile() error {
-	//open real file, auto create if not exists
-	file, err := os.OpenFile(f.dataFilePath, os.O_CREATE|os.O_RDWR, define.FilePerm)
-	if err != nil {
-		return err
-	}
-
-	//sync file handle
-	f.file = file
-	f.openDone = true
-
-	if f.isLazyMode {
-		//start write process
-		go f.writeProcess()
-
-		//start read process
-		go f.readProcess()
-	}
-	return nil
 }
 
 //load chunk meta file

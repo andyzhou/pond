@@ -30,4 +30,5 @@ const (
 	DefaultChunkBlockSize = 128 //min block data size
 	DefaultChunkMaxSize = DataSizeOfTB //one TB
 	DefaultChunkMultiIncr = 0.1
+	DefaultChunkActiveHours = 8 //xx hours
 )
