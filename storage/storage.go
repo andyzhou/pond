@@ -89,7 +89,9 @@ func (f *Storage) DeleteData(shortUrl string) error {
 	if fileBase.Appoints <= 0 {
 		//update removed status
 		fileBase.Removed = true
+		fileBase.Appoints = 0
 	}
+
 	//update file base info
 	err := fileBaseSearch.AddOne(fileBase)
 	if err != nil {
