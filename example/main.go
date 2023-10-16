@@ -11,7 +11,7 @@ import (
 
 const (
 	DataDir = "./private"
-	ShortUrl = "044Q58" //"dMVRt8"
+	ShortUrl = "tUFR9g" //"dMVRt8"
 )
 
 //write data
@@ -64,10 +64,10 @@ func main() {
 	getFileInfos(p)
 
 	//read data
-	//readData(p)
+	readData(p)
 
 	//write data
-	writeData(p)
+	//writeData(p)
 
 	//for i := 0; i < 50; i++ {
 	//	writeData(p)

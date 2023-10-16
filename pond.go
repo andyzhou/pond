@@ -63,7 +63,10 @@ func (f *Pond) ReadData(
 //write new data, if assigned short url means overwrite data
 //if overwrite data, fix chunk size config should be true
 //return shortUrl, error
-func (f *Pond) WriteData(data []byte, shortUrls ...string) (string, error) {
+func (f *Pond) WriteData(
+			data []byte,
+			shortUrls ...string,
+		) (string, error) {
 	return f.storage.WriteData(data, shortUrls...)
 }
 
