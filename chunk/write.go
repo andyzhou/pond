@@ -2,14 +2,13 @@ package chunk
 
 import (
 	"errors"
-	"github.com/andyzhou/pond/define"
-	"log"
 	"math"
 	"time"
 )
 
 /*
  * chunk write face
+ * - support queue and direct opt
  */
 
 //write file
@@ -30,14 +29,9 @@ func (f *Chunk) WriteFile(
 	}
 
 	//check lazy mode
-	if !f.isLazyMode {
+	if !f.writeLazy {
 		//direct write data
 		return f.directWriteData(data, offsets...)
-	}
-
-	if f.writeChan == nil || len(f.writeChan) >= define.DefaultChunkChanSize {
-		resp.Err = errors.New("chunk data write chan invalid")
-		return &resp
 	}
 
 	//detect offset
@@ -49,86 +43,53 @@ func (f *Chunk) WriteFile(
 	req := WriteReq{
 		Offset: offset,
 		Data: data,
-		Resp: make(chan WriteResp, 1),
 	}
 
 	//send request
-	f.writeChan <- req
-
-	//wait for response
-	resp, isOk := <- req.Resp
-	if !isOk && &resp == nil {
-		resp = WriteResp{}
-		resp.Err = errors.New("can't get response data")
+	result, err := f.writeQueue.SendData(req, true)
+	if err != nil {
+		resp.Err = err
 		return &resp
 	}
-	return &resp
+	respObj, ok := result.(WriteResp)
+	if !ok || &respObj == nil {
+		resp.Err = errors.New("invalid response data")
+		return &resp
+	}
+	return &respObj
 }
 
 /////////////////
 //private func
 /////////////////
 
-//write process
-func (f *Chunk) writeProcess() {
-	var (
-		req  WriteReq
-		isOk bool
-		m    any = nil
-	)
-
-	//defer
-	defer func() {
-		if err := recover(); err != m {
-			log.Printf("chunk.writeProcess panic, err:%v\n", err)
-		}
-
-		//close chan
-		close(f.writeChan)
-	}()
-
-	//loop
-	for {
-		select {
-		case req, isOk = <- f.writeChan:
-			if isOk {
-				//write data
-				resp := f.writeData(&req)
-				//send response
-				req.Resp <- *resp
-			}
-		case <- f.writeCloseChan:
-			return
-		}
-	}
-}
-
-//write file data
-func (f *Chunk) writeData(req *WriteReq) *WriteResp {
-	var (
-		resp WriteResp
-	)
+//cb for write queue
+func (f *Chunk) cbForWriteOpt(
+		data interface{},
+	) (interface{}, error) {
 	//check
-	if req == nil || req.Data == nil {
-		resp.Err = errors.New("invalid parameter")
-		return &resp
+	if data == nil {
+		return nil, errors.New("invalid parameter")
 	}
-	if f.file == nil {
-		resp.Err = errors.New("chunk file closed")
-		return &resp
+	req, ok := data.(WriteReq)
+	if !ok || &req == nil {
+		return nil, errors.New("data format should be `WriteReq`")
 	}
 
-	//begin write data
-	writeResp := f.directWriteData(req.Data, req.Offset)
-	resp = *writeResp
-	return &resp
+	//get key data
+	offset := req.Offset
+	realData := req.Data
+
+	//direct write data
+	resp := f.directWriteData(realData, offset)
+	return *resp, nil
 }
 
 //direct write data
 func (f *Chunk) directWriteData(
-			data []byte,
-			offsets ...int64,
-		) *WriteResp {
+		data []byte,
+		offsets ...int64,
+	) *WriteResp {
 	var (
 		assignedOffset bool
 		offset int64 = -1
@@ -190,11 +151,13 @@ func (f *Chunk) directWriteData(
 	}
 
 	//format resp
-	resp.Err = err
 	resp.NewOffSet = chunkOldSize
 	resp.BlockSize = realBlockSize
 	if assignedOffset {
 		resp.NewOffSet = offset
+	}
+	if err != nil {
+		resp.Err = err
 	}
 	return &resp
 }

@@ -5,7 +5,7 @@ import (
 	"github.com/andyzhou/pond/chunk"
 	"github.com/andyzhou/pond/conf"
 	"github.com/andyzhou/pond/define"
-	"log"
+	"github.com/andyzhou/tinylib/queue"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -18,35 +18,37 @@ import (
 
 //face info
 type Manager struct {
+	wg *sync.WaitGroup //reference
 	cfg *conf.Config //reference
 	chunk *Chunk
 	meta *Meta
+	ticker *queue.Ticker
 	chunkMap sync.Map //chunkId -> *Chunk, active chunk file map
 	chunkMaxSize int64
 	chunks int32 //atomic count
 	initDone bool
 	lazyMode bool
-	tickChan chan struct{}
-	closeChan chan bool
 	sync.RWMutex
 }
 
 //construct
-func NewManager() *Manager {
+func NewManager(wg *sync.WaitGroup) *Manager {
 	this := &Manager{
+		wg: wg,
 		chunk: NewChunk(),
-		meta: NewMeta(),
+		meta: NewMeta(wg),
 		chunkMap: sync.Map{},
 		chunkMaxSize: define.DefaultChunkMaxSize,
-		tickChan: make(chan struct{}, 1),
-		closeChan: make(chan bool, 1),
 	}
-	go this.runMainProcess()
+	this.interInit()
 	return this
 }
 
 //quit
 func (f *Manager) Quit() {
+	if f.ticker != nil {
+		f.ticker.Quit()
+	}
 	f.meta.Quit()
 	sf := func(k, v interface{}) bool {
 		chunkObj, _ := v.(*chunk.Chunk)
@@ -56,9 +58,6 @@ func (f *Manager) Quit() {
 		return true
 	}
 	f.chunkMap.Range(sf)
-	if f.closeChan != nil {
-		close(f.closeChan)
-	}
 }
 
 //gen new file short url
@@ -177,10 +176,12 @@ func (f *Manager) SetConfig(cfg *conf.Config) error {
 ////////////////
 
 //check un-active chunk files
-func (f *Manager) checkUnActiveChunkFiles() {
+func (f *Manager) checkUnActiveChunkFiles() error {
+	//check
 	if f.chunks <= 0 {
-		return
+		return errors.New("no any chunks")
 	}
+	//loop check
 	sf := func(k, v interface{}) bool {
 		chunkObj, _ := v.(*chunk.Chunk)
 		if chunkObj != nil &&
@@ -192,45 +193,25 @@ func (f *Manager) checkUnActiveChunkFiles() {
 		return true
 	}
 	f.chunkMap.Range(sf)
+	return nil
 }
 
-//main process for check chunk files
-func (f *Manager) runMainProcess() {
-	var (
-		m any = nil
-	)
-	//defer
-	defer func() {
-		if err := recover(); err != m {
-			log.Printf("manager.mainProcess panic, err:%v\n", err)
-		}
-	}()
-
-	//ticker
-	ticker := func() {
-		sf := func() {
-			if f.tickChan != nil {
-				f.tickChan <- struct{}{}
-			}
-		}
-		time.AfterFunc(define.ManagerTickerSeconds * time.Second, sf)
+//cb for ticker quit
+func (f *Manager) cbForTickQuit() {
+	if f.wg != nil {
+		f.wg.Done()
 	}
+}
 
-	//start first ticker
-	ticker()
+//inter init
+func (f *Manager) interInit() {
+	//init ticker
+	f.ticker = queue.NewTicker(define.ManagerTickerSeconds * time.Second)
+	f.ticker.SetQuitCallback(f.cbForTickQuit)
+	f.ticker.SetCheckerCallback(f.checkUnActiveChunkFiles)
 
-	//loop
-	for {
-		select {
-		case <- f.tickChan:
-			{
-				//check
-				f.checkUnActiveChunkFiles()
-				//start next ticker
-				ticker()
-			}
-		case <- f.closeChan:
-			return
-		}
+	//wait group add count
+	if f.wg != nil {
+		f.wg.Add(1)
 	}
 }

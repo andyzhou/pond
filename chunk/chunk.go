@@ -1,12 +1,14 @@
 package chunk
 
 import (
+	"encoding/gob"
 	"errors"
 	"fmt"
 	"github.com/andyzhou/pond/conf"
 	"github.com/andyzhou/pond/define"
-	"github.com/andyzhou/pond/face"
 	"github.com/andyzhou/pond/json"
+	"github.com/andyzhou/tinylib/queue"
+	"github.com/andyzhou/tinylib/util"
 	"log"
 	"os"
 	"sync"
@@ -26,21 +28,26 @@ import (
 type Chunk struct {
 	cfg *conf.Config //reference
 	chunkObj *json.ChunkFileJson
-	gob *face.Gob
+	gob *util.Gob
 	file *os.File
+	readQueue *queue.Queue
+	writeQueue *queue.Queue
+	metaTicker *queue.Ticker
 	chunkFileId int64
 	metaFilePath string
 	dataFilePath string
 	lastActiveTime int64 //time stamp value
 	openDone bool
 	metaUpdated bool
-	isLazyMode bool
-	readChan chan ReadReq
-	writeChan chan WriteReq
-	readCloseChan chan bool
-	writeCloseChan chan bool
-	metaCloseChan chan bool
+	writeLazy, readLazy bool
+	metaLocker sync.RWMutex
+	fileLocker sync.RWMutex
 	sync.RWMutex
+}
+
+//init for gob register
+func init()  {
+	gob.Register(&json.ChunkFileJson{})
 }
 
 //construct
@@ -55,15 +62,12 @@ func NewChunk(
 	//self init
 	this := &Chunk{
 		cfg: cfg,
-		gob: face.NewGob(),
+		gob: util.NewGob(),
 		chunkFileId: chunkFileId,
 		metaFilePath: chunkMetaFile,
 		dataFilePath: fmt.Sprintf("%v/%v/%v", cfg.DataPath, define.SubDirOfFile, chunkDataFile),
-		readChan: make(chan ReadReq, define.DefaultChunkChanSize),
-		writeChan: make(chan WriteReq, define.DefaultChunkChanSize),
-		readCloseChan: make(chan bool, 1),
-		writeCloseChan: make(chan bool, 1),
-		metaCloseChan: make(chan bool, 1),
+		readQueue: queue.NewQueue(),
+		writeQueue: queue.NewQueue(),
 	}
 	this.interInit()
 	return this
@@ -71,13 +75,18 @@ func NewChunk(
 
 //quit
 func (f *Chunk) Quit() {
+	if f.writeQueue != nil {
+		f.writeQueue.Quit()
+	}
+	if f.readQueue != nil {
+		f.readQueue.Quit()
+	}
+	if f.metaTicker != nil {
+		f.metaTicker.Quit()
+	}
+
 	//close opened data file
 	f.closeDataFile()
-
-	//meta close chan
-	if f.metaCloseChan != nil {
-		close(f.metaCloseChan)
-	}
 }
 
 //check file opened or not
@@ -135,18 +144,26 @@ func (f *Chunk) interInit() {
 	rootPath := fmt.Sprintf("%v/%v", f.cfg.DataPath, define.SubDirOfFile)
 	f.gob.SetRootPath(rootPath)
 
+	//lazy mode check
+	if f.cfg.ReadLazy {
+		f.readLazy = true
+	}
+	if f.cfg.WriteLazy {
+		f.writeLazy = true
+	}
+
 	//load meta data
 	err := f.loadMetaFile()
 	if err != nil {
-		log.Printf("chunk load meta file %v failed, err:%v\n", f.metaFilePath, err.Error())
+		log.Printf("chunk load meta file %v failed, err:%v\n",
+			f.metaFilePath, err.Error())
 	}
 
-	////open data file
-	//err = f.openDataFile()
-	//if err != nil {
-	//	log.Printf("chunk open data file %v failed, err:%v\n", f.dataFilePath, err.Error())
-	//}
+	//set cb for read and write file queue
+	f.readQueue.SetCallback(f.cbForReadOpt)
+	f.writeQueue.SetCallback(f.cbForWriteOpt)
 
-	//run save meta process
-	go f.saveMetaProcess()
+	//init meta ticker
+	f.metaTicker = queue.NewTicker(define.DefaultChunkMetaTicker * time.Second)
+	f.metaTicker.SetCheckerCallback(f.cbForUpdateMeta)
 }

@@ -5,46 +5,20 @@ import (
 	"github.com/andyzhou/pond/define"
 	"github.com/andyzhou/pond/json"
 	"log"
-	"time"
 )
 
 /*
  * chunk meta file opt face
+ * - one chunk file, one meta file
  */
 
-//meta auto save process
-func (f *Chunk) saveMetaProcess() {
-	var (
-		ticker = time.NewTicker(define.ChunkFileMetaSaveRate * time.Second)
-		m any = nil
-	)
-
-	//defer
-	defer func() {
-		if err := recover(); err != m {
-			log.Printf("chunk.saveMetaProcess panic, err:%v\n", err)
-		}
-
-		//force save meta data
-		f.updateMetaFile(true)
-
-		//close ticker
-		ticker.Stop()
-	}()
-
-	//loop
-	for {
-		select {
-		case <- ticker.C:
-			{
-				if !f.metaUpdated {
-					f.updateMetaFile()
-				}
-			}
-		case <- f.metaCloseChan:
-			return
-		}
+//cb for update meta file
+func (f *Chunk) cbForUpdateMeta() error {
+	if f.metaUpdated {
+		return errors.New("meta file had updated")
 	}
+	err := f.updateMetaFile(true)
+	return err
 }
 
 //update meta file
@@ -63,11 +37,15 @@ func (f *Chunk) updateMetaFile(isForces ...bool) error {
 	}
 	if !isForce {
 		//just update switcher
+		f.metaLocker.Lock()
+		defer f.metaLocker.Unlock()
 		f.metaUpdated = false
 		return nil
 	}
 
-	//force save meta data
+	//force save meta data with locker
+	f.metaLocker.Lock()
+	defer f.metaLocker.Unlock()
 	err := f.gob.Store(f.metaFilePath, f.chunkObj)
 	if err != nil {
 		log.Printf("chunk.writeData, update meta failed, err:%v\n", err.Error())
@@ -78,10 +56,14 @@ func (f *Chunk) updateMetaFile(isForces ...bool) error {
 
 //load chunk meta file
 func (f *Chunk) loadMetaFile() error {
-	//load god file
+	//load god file with locker
+	f.metaLocker.Lock()
 	chunkObj := json.NewChunkFileJson()
 	err := f.gob.Load(f.metaFilePath, &chunkObj)
+	f.metaLocker.Unlock()
 	if err != nil {
+		//init default value
+		f.chunkObj = json.NewChunkFileJson()
 		return err
 	}
 

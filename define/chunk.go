@@ -1,21 +1,21 @@
 package define
 
-//others
+// others
 const (
-	FileErrOfEOF = "EOF"
-	FilePerm = 0755
+	FileErrOfEOF          = "EOF"
+	FilePerm              = 0755
 	ChunkFileMetaSaveRate = 1 //xx seconds
-	ChunkMultiTryTimes = 3
+	ChunkMultiTryTimes    = 3
 )
 
-//file para
+// file para
 const (
 	ChunkMetaFilePara = "chunk-%v.meta" //chunk meta file
 	ChunkDataFilePara = "chunk-%v.data" //chunk data file
-	TempZipFilePara = "%s/%s-%d.zip" //path/zipFile
+	TempZipFilePara   = "%s/%s-%d.zip"  //path/zipFile
 )
 
-//data size
+// data size
 const (
 	DataSizeOfKB = 1024
 	DataSizeOfMB = DataSizeOfKB * 1024
@@ -23,12 +23,13 @@ const (
 	DataSizeOfTB = DataSizeOfGB * 1000
 )
 
-//default value
+// default value
 const (
 	DefaultChunkReadProcess = 3
-	DefaultChunkChanSize = 1024
-	DefaultChunkBlockSize = 128 //min block data size
-	DefaultChunkMaxSize = DataSizeOfTB //one TB
-	DefaultChunkMultiIncr = 0.1
-	DefaultChunkActiveHours = 8 //xx hours
+	DefaultChunkChanSize    = 1024
+	DefaultChunkBlockSize   = 128          //min block data size
+	DefaultChunkMaxSize     = DataSizeOfTB //one TB
+	DefaultChunkMultiIncr   = 0.1
+	DefaultChunkActiveHours = 4 //xx hours
+	DefaultChunkMetaTicker  = 5 //xx seconds
 )

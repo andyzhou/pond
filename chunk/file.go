@@ -8,7 +8,8 @@ import (
 )
 
 /*
- * chunk data file face
+ * chunk data file base opt face
+ * - open and close chunk file
  */
 
 //close chunk data file
@@ -18,6 +19,10 @@ func (f *Chunk) closeDataFile() error {
 		return fmt.Errorf("chunk file %v not opened", f.file)
 	}
 
+	//do relate opt with locker
+	f.fileLocker.Lock()
+	defer f.fileLocker.Unlock()
+
 	//close file obj
 	if f.file != nil {
 		//force update meta data
@@ -25,20 +30,7 @@ func (f *Chunk) closeDataFile() error {
 		f.file.Close()
 		f.file = nil
 	}
-
-	//close chan notify
-	if f.readCloseChan != nil {
-		f.readCloseChan <- true
-	}
-	if f.writeCloseChan != nil {
-		f.writeCloseChan <- true
-	}
-
-	//defer
-	defer func() {
-		f.openDone = false
-	}()
-
+	f.openDone = false
 	return nil
 }
 
@@ -55,17 +47,11 @@ func (f *Chunk) openDataFile() error {
 		return err
 	}
 
-	//sync file handle
+	//sync file handle with locker
+	f.fileLocker.Lock()
+	defer f.fileLocker.Unlock()
 	f.file = file
 	f.openDone = true
 	f.lastActiveTime = time.Now().Unix()
-
-	if f.isLazyMode {
-		//start write process
-		go f.writeProcess()
-
-		//start read process
-		go f.readProcess()
-	}
 	return nil
 }

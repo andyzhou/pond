@@ -8,7 +8,7 @@ import (
 	"github.com/andyzhou/pond/define"
 	"github.com/andyzhou/pond/json"
 	"github.com/andyzhou/pond/search"
-	"github.com/andyzhou/pond/util"
+	"github.com/andyzhou/pond/utils"
 	"math/rand"
 	"net/http"
 	"sync"
@@ -18,23 +18,23 @@ import (
 /*
  * inter storage face
  * - include meta and chunk data
- * - write request in process
+ * - write/del request in queues
  */
 
 //face info
 type Storage struct {
+	wg *sync.WaitGroup //reference
 	cfg *conf.Config //reference
 	manager *Manager
 	initDone bool
 	searchLocker sync.RWMutex
-	util.Util
+	utils.Utils
 }
 
 //construct
-func NewStorage() *Storage {
+func NewStorage(wg *sync.WaitGroup) *Storage {
 	this := &Storage{
-		manager: NewManager(),
-		searchLocker: sync.RWMutex{},
+		manager: NewManager(wg),
 	}
 	return this
 }
@@ -42,6 +42,7 @@ func NewStorage() *Storage {
 //quit
 func (f *Storage) Quit() {
 	f.manager.Quit()
+	search.GetSearch().Quit()
 }
 
 //get file info list from search
@@ -210,13 +211,17 @@ func (f *Storage) WriteData(
 }
 
 //set config
-func (f *Storage) SetConfig(cfg *conf.Config) error {
+func (f *Storage) SetConfig(
+	cfg *conf.Config,
+	wg *sync.WaitGroup) error {
 	//check
-	if cfg == nil || cfg.DataPath == "" {
+	if cfg == nil || cfg.DataPath == "" || wg == nil {
 		return errors.New("invalid parameter")
 	}
+	f.wg = wg
+
 	//search setup
-	err := search.GetSearch().SetRootPath(cfg.DataPath)
+	err := search.GetSearch().SetCore(cfg.DataPath, wg)
 	if err != nil {
 		return err
 	}
@@ -224,9 +229,6 @@ func (f *Storage) SetConfig(cfg *conf.Config) error {
 	//manager setup
 	f.cfg = cfg
 	err = f.manager.SetConfig(cfg)
-	if err != nil {
-		return err
-	}
 	f.initDone = true
 	return nil
 }
@@ -399,7 +401,7 @@ func (f *Storage) writeNewData(data []byte) (string, error) {
 			return shortUrl, errors.New("can't get chunk write file response")
 		}
 		if resp.Err != nil {
-			return shortUrl, err
+			return shortUrl, resp.Err
 		}
 		//update file base
 		fileBaseObj.Offset = resp.NewOffSet

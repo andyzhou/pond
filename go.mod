@@ -2,7 +2,10 @@ module github.com/andyzhou/pond
 
 go 1.19
 
-require github.com/andyzhou/tinysearch v0.0.0-20230915043404-0bca8937c1b4
+require (
+	github.com/andyzhou/tinylib v0.0.0-20240119034138-720e0fbb9a59
+	github.com/andyzhou/tinysearch v0.0.0-20230915043404-0bca8937c1b4
+)
 
 require (
 	github.com/RoaringBitmap/roaring v0.9.4 // indirect

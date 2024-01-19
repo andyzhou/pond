@@ -1,13 +1,15 @@
 package storage
 
 import (
+	"encoding/gob"
 	"errors"
 	"fmt"
 	"github.com/andyzhou/pond/conf"
 	"github.com/andyzhou/pond/define"
-	"github.com/andyzhou/pond/face"
 	"github.com/andyzhou/pond/json"
-	"github.com/andyzhou/pond/util"
+	"github.com/andyzhou/pond/utils"
+	"github.com/andyzhou/tinylib/queue"
+	"github.com/andyzhou/tinylib/util"
 	"log"
 	"sync"
 	"sync/atomic"
@@ -21,44 +23,50 @@ import (
 
 //face info
 type Meta struct {
-	cfg *conf.Config //reference
-	gob *face.Gob
-	shortUrl *face.ShortUrl
-	metaFile string
-	metaJson *json.MetaJson //running data
+	wg 			*sync.WaitGroup //reference
+	cfg         *conf.Config //reference
+	gob         *util.Gob
+	shortUrl    *util.ShortUrl
+	ticker 		*queue.Ticker
+	metaFile    string
+	metaJson    *json.MetaJson //running data
 	metaUpdated bool
-	objLocker sync.RWMutex
-	tickChan chan struct{}
-	closeChan chan bool
+	objLocker   sync.RWMutex
 	util.Util
+	utils.Utils
 	sync.RWMutex
 }
 
+//init
+func init() {
+	gob.Register(&json.MetaJson{})
+}
+
 //construct
-func NewMeta() *Meta {
+func NewMeta(wg *sync.WaitGroup) *Meta {
 	//self init
 	this := &Meta{
-		metaJson:     json.NewMetaJson(),
-		gob: face.NewGob(),
-		shortUrl: face.NewShortUrl(),
-		objLocker:    sync.RWMutex{},
-		tickChan: make(chan struct{}, 1),
-		closeChan: make(chan bool, 1),
+		wg: wg,
+		metaJson:  json.NewMetaJson(),
+		gob:       util.NewGob(),
+		shortUrl:  util.NewShortUrl(),
+		objLocker: sync.RWMutex{},
 	}
+	this.interInit()
 	return this
 }
 
 //close meta file
 func (f *Meta) Quit() {
-	//close main process
-	if f.closeChan != nil {
-		close(f.closeChan)
-	}
-
-	//force save data
-	err := f.SaveMeta(true)
-	if err != nil {
-		log.Printf("meta.Quit err:%v\n", err.Error())
+	defer func() {
+		//force save data
+		err := f.SaveMeta(true)
+		if err != nil {
+			log.Printf("meta.Quit err:%v\n", err.Error())
+		}
+	}()
+	if f.ticker != nil {
+		f.ticker.Quit()
 	}
 }
 
@@ -82,19 +90,24 @@ func (f *Meta) CreateNewChunk() *json.ChunkFileJson {
 	newChunkFileObj := json.NewChunkFileJson()
 	newChunkFileObj.Id = newChunkId
 
+	//defer
+	defer func() {
+		//save meta file
+		f.SaveMeta()
+	}()
+
 	//sync into meta obj with locker
 	f.objLocker.Lock()
 	defer f.objLocker.Unlock()
 	atomic.AddInt64(&f.metaJson.FileId, 1)
 	f.metaJson.Chunks = append(f.metaJson.Chunks, newChunkId)
 
-	//save meta file
-	f.SaveMeta()
 	return newChunkFileObj
 }
 
 //save meta data
-func (f *Meta) SaveMeta(isForces ...bool) error {
+func (f *Meta) SaveMeta(
+	isForces ...bool) error {
 	var (
 		isForce bool
 	)
@@ -105,8 +118,10 @@ func (f *Meta) SaveMeta(isForces ...bool) error {
 	}
 
 	//check
-	if f.cfg.LazyMode && !isForce {
+	if !isForce {
 		//do nothing, just update switcher
+		f.Lock()
+		defer f.Unlock()
 		f.metaUpdated = false
 		return nil
 	}
@@ -118,8 +133,7 @@ func (f *Meta) SaveMeta(isForces ...bool) error {
 
 //set config
 func (f *Meta) SetConfig(
-			cfg *conf.Config,
-		) error {
+	cfg *conf.Config) error {
 	//check
 	if cfg == nil || cfg.DataPath == "" {
 		return errors.New("invalid parameter")
@@ -144,69 +158,15 @@ func (f *Meta) SetConfig(
 
 	//check and load meta file
 	err = f.gob.Load(f.metaFile, &f.metaJson)
-	if err == nil {
-		//start main process
-		go f.runMainProcess()
+	if err != nil {
+		f.metaJson = json.NewMetaJson()
 	}
-	return err
+	return nil
 }
 
 /////////////////
 //private func
 /////////////////
-
-//run main process
-func (f *Meta) runMainProcess() {
-	var (
-		m any = nil
-	)
-
-	//defer
-	defer func() {
-		if err := recover(); err != m {
-			log.Printf("meta.mainProecss panic, err:%v\n", err)
-		}
-	}()
-
-	//tick setup
-	tick := func() {
-		sf := func() {
-			if f.tickChan != nil {
-				f.tickChan <- struct{}{}
-			}
-		}
-		duration := time.Duration(define.ChunksMetaSaveRate) * time.Second
-		time.AfterFunc(duration, sf)
-	}
-	tick()
-
-	//loop
-	for {
-		select {
-		case <- f.tickChan:
-			{
-				//save meta
-				f.autoSaveMeta()
-				//start next tick
-				tick()
-			}
-		case <- f.closeChan:
-			return
-		}
-	}
-}
-
-//auto save meta
-func (f *Meta) autoSaveMeta() {
-	f.Lock()
-	defer f.Unlock()
-	if f.metaUpdated {
-		//has updated, do nothing
-		return
-	}
-	f.saveMetaData()
-	f.metaUpdated = true
-}
 
 //save meta data
 func (f *Meta) saveMetaData() error {
@@ -216,6 +176,8 @@ func (f *Meta) saveMetaData() error {
 	}
 
 	//begin save meta with locker
+	f.Lock()
+	defer f.Unlock()
 	err := f.gob.Store(f.metaFile, f.metaJson)
 	if err != nil {
 		log.Printf("meta.SaveMeta failed, err:%v\n", err.Error())
@@ -230,4 +192,35 @@ func (f *Meta) genNewFileDataId() int64 {
 	//save meta data
 	f.SaveMeta()
 	return newDataId
+}
+
+//cb for auto save meta
+func (f *Meta) cbForAutoSaveMeta() error {
+	if f.metaUpdated {
+		//has updated, do nothing
+		return errors.New("meta had updated")
+	}
+	f.saveMetaData()
+	f.metaUpdated = true
+	return nil
+}
+
+//for for tick quit
+func (f *Meta) cbForTickQuit() {
+	if f.wg != nil {
+		f.wg.Done()
+	}
+}
+
+//inter init
+func (f *Meta) interInit() {
+	//init ticker
+	f.ticker = queue.NewTicker(define.MetaAutoSaveTicker)
+	f.ticker.SetCheckerCallback(f.cbForAutoSaveMeta)
+	f.ticker.SetQuitCallback(f.cbForTickQuit)
+
+	//add wait group
+	if f.wg != nil {
+		f.wg.Add(1)
+	}
 }

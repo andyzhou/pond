@@ -1,4 +1,4 @@
-package util
+package utils
 
 import (
 	"crypto/md5"
@@ -13,11 +13,11 @@ import (
  */
 
 //face info
-type Util struct {
+type Utils struct {
 }
 
 //md5 sum binary
-func (f *Util)  Md5Sum(data []byte) (string, error) {
+func (f *Utils)  Md5Sum(data []byte) (string, error) {
 	//check
 	if data == nil || len(data) <= 0 {
 		return "", errors.New("invalid parameter")
@@ -30,7 +30,7 @@ func (f *Util)  Md5Sum(data []byte) (string, error) {
 }
 
 //check file exists or not
-func (f *Util) CheckFile(filePath string) error {
+func (f *Utils) CheckFile(filePath string) error {
 	//check
 	if filePath == "" {
 		return errors.New("invalid dir parameter")
@@ -40,7 +40,7 @@ func (f *Util) CheckFile(filePath string) error {
 }
 
 //check and make dir
-func (f *Util) CheckDir(dir string) error {
+func (f *Utils) CheckDir(dir string) error {
 	//check
 	if dir == "" {
 		return errors.New("invalid dir parameter")
@@ -58,6 +58,6 @@ func (f *Util) CheckDir(dir string) error {
 }
 
 //get current dir
-func (f *Util) GetCurDir() (string, error) {
+func (f *Utils) GetCurDir() (string, error) {
 	return os.Getwd()
 }

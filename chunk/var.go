@@ -6,7 +6,6 @@ type (
 	ReadReq struct {
 		Offset int64
 		Size int64
-		Resp chan ReadResp
 	}
 	ReadResp struct {
 		Data []byte
@@ -17,11 +16,10 @@ type (
 	WriteReq struct {
 		Data []byte
 		Offset int64 //assigned offset for overwrite
-		Resp chan WriteResp
 	}
 	WriteResp struct {
 		NewOffSet int64
 		BlockSize int64
-		Err error
+		Err       error
 	}
 )

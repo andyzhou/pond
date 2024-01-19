@@ -1,24 +1,24 @@
 package define
 
-//sub dir
+// sub dir
 const (
 	SubDirOfSearch = "search"
-	SubDirOfFile = "file"
+	SubDirOfFile   = "file"
 )
 
-//seconds
+// seconds
 const (
 	SecondsOfMinute = 60
-	SecondsOfHour = SecondsOfMinute * 60
-	SecondsOfDay = SecondsOfHour * 24
+	SecondsOfHour   = SecondsOfMinute * 60
+	SecondsOfDay    = SecondsOfHour * 24
 )
 
-//default
+// default
 const (
 	DefaultRootPath = "./"
 )
 
-//others
+// others
 const (
 	ManagerTickerSeconds = 60 //xx seconds
 )

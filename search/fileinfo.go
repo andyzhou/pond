@@ -4,8 +4,10 @@ import (
 	"errors"
 	"github.com/andyzhou/pond/define"
 	"github.com/andyzhou/pond/json"
+	"github.com/andyzhou/tinylib/queue"
 	"github.com/andyzhou/tinysearch"
 	tJson "github.com/andyzhou/tinysearch/json"
+	"sync"
 )
 
 /*
@@ -16,15 +18,24 @@ import (
 //face info
 type FileInfo struct {
 	ts *tinysearch.Service //reference
+	wg *sync.WaitGroup //reference
+	queue *queue.Queue //inter write or delete queue
 }
 
 //construct
-func NewFileInfo(ts *tinysearch.Service) *FileInfo {
+func NewFileInfo(ts *tinysearch.Service, wg *sync.WaitGroup) *FileInfo {
 	this := &FileInfo{
 		ts: ts,
+		wg: wg,
+		queue: queue.NewQueue(),
 	}
 	this.interInit()
 	return this
+}
+
+//quit
+func (f *FileInfo) Quit() {
+	f.queue.Quit()
 }
 
 //get batch by create at desc
@@ -45,6 +56,7 @@ func (f *FileInfo) GetBathByTime(
 }
 
 //get batch info
+//sync opt
 func (f *FileInfo) QueryBatch(
 			filters []*tJson.FilterField,
 			sorts []*tJson.SortField,
@@ -96,26 +108,8 @@ func (f *FileInfo) QueryBatch(
 	return total, result, nil
 }
 
-//del one file info
-func (f *FileInfo) DelOne(shortUrl string) error {
-	//check
-	if shortUrl == "" {
-		return errors.New("invalid parameter")
-	}
-	if f.ts == nil {
-		return errors.New("inter search engine not init")
-	}
-
-	//get relate face
-	index := f.ts.GetIndex(define.SearchIndexOfFileInfo)
-	doc := f.ts.GetDoc()
-
-	//delete data by short url
-	err := doc.RemoveDoc(index, shortUrl)
-	return err
-}
-
 //get one file info
+//sync opt
 func (f *FileInfo) GetOne(shortUrl string) (*json.FileInfoJson, error) {
 	//check
 	if shortUrl == "" {
@@ -144,8 +138,63 @@ func (f *FileInfo) GetOne(shortUrl string) (*json.FileInfoJson, error) {
 	return fileInfoJson, err
 }
 
+//del one file info
+//async opt
+func (f *FileInfo) DelOne(shortUrl string) error {
+	//check
+	if shortUrl == "" {
+		return errors.New("invalid parameter")
+	}
+	if f.ts == nil {
+		return errors.New("inter search engine not init")
+	}
+
+	//save into queue
+	_, err := f.queue.SendData(shortUrl)
+	return err
+}
+
 //add one file info
+//async opt
 func (f *FileInfo) AddOne(obj *json.FileInfoJson) error {
+	//check
+	if obj == nil || obj.ShortUrl == "" {
+		return errors.New("invalid parameter")
+	}
+	if f.ts == nil {
+		return errors.New("inter search engine not init")
+	}
+
+	//save into queue
+	_, err := f.queue.SendData(obj)
+	return err
+}
+
+////////////////
+//private func
+////////////////
+
+//del one doc
+func (f *FileInfo) delOneDoc(shortUrl string) error {
+	//check
+	if shortUrl == "" {
+		return errors.New("invalid parameter")
+	}
+	if f.ts == nil {
+		return errors.New("inter search engine not init")
+	}
+
+	//get relate face
+	index := f.ts.GetIndex(define.SearchIndexOfFileInfo)
+	doc := f.ts.GetDoc()
+
+	//delete data by short url
+	err := doc.RemoveDoc(index, shortUrl)
+	return err
+}
+
+//add one doc
+func (f *FileInfo) addOneDoc(obj *json.FileInfoJson) error {
 	//check
 	if obj == nil || obj.ShortUrl == "" {
 		return errors.New("invalid parameter")
@@ -163,8 +212,48 @@ func (f *FileInfo) AddOne(obj *json.FileInfoJson) error {
 	return err
 }
 
-//inter init
-func (f *FileInfo) interInit() {
+//cb for queue quit
+func (f *FileInfo) cbForQueueQuit() {
+	if f.wg != nil {
+		f.wg.Done()
+	}
+}
+
+//cb for queue opt
+func (f *FileInfo) cbForQueueOpt(
+	data interface{}) (interface{}, error) {
+	var (
+		err error
+	)
+	//check
+	if data == nil {
+		return nil, errors.New("invalid parameter")
+	}
+
+	//do diff opt by data type
+	switch data.(type) {
+	case *json.FileInfoJson:
+		{
+			//for save opt
+			obj, _ := data.(*json.FileInfoJson)
+			err = f.addOneDoc(obj)
+		}
+	case string:
+		{
+			//for delete opt
+			shortUrl, _ := data.(string)
+			err = f.delOneDoc(shortUrl)
+		}
+	default:
+		{
+			err = errors.New("invalid data type")
+		}
+	}
+	return nil, err
+}
+
+//init index
+func (f *FileInfo) initIndex() {
 	if f.ts == nil {
 		return
 	}
@@ -173,4 +262,15 @@ func (f *FileInfo) interInit() {
 	if err != nil {
 		panic(any(err))
 	}
+}
+
+//inter init
+func (f *FileInfo) interInit() {
+	//init index
+	f.initIndex()
+
+	//set cb for queue
+	f.queue.SetCallback(f.cbForQueueOpt)
+	f.queue.SetQuitCallback(f.cbForQueueQuit)
+	f.wg.Add(1)
 }

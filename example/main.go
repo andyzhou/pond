@@ -11,7 +11,7 @@ import (
 
 const (
 	DataDir = "./private"
-	ShortUrl = "tUFR9g" //"dMVRt8"
+	ShortUrl = "g88sUh" //"dMVRt8"
 )
 
 //write data
@@ -64,7 +64,7 @@ func main() {
 	getFileInfos(p)
 
 	//read data
-	readData(p)
+	//readData(p)
 
 	//write data
 	//writeData(p)
@@ -75,4 +75,7 @@ func main() {
 
 	//quit
 	p.Quit()
+
+	p.Wait()
+	log.Printf("example done")
 }

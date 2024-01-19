@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/andyzhou/pond/define"
-	"github.com/andyzhou/pond/util"
+	"github.com/andyzhou/pond/utils"
 	"github.com/andyzhou/tinysearch"
 	"sync"
 )
@@ -29,7 +29,8 @@ type Search struct {
 	info *FileInfo
 	base *FileBase
 	ts *tinysearch.Service
-	util.Util
+	wg *sync.WaitGroup //reference
+	utils.Utils
 }
 
 //get single instance
@@ -47,6 +48,15 @@ func NewSearch() *Search {
 	return this
 }
 
+//quit
+func (f *Search) Quit() {
+	f.info.Quit()
+	f.base.Quit()
+	if f.ts != nil {
+		f.ts.Quit()
+	}
+}
+
 //get relate face
 func (f *Search) GetFileInfo() *FileInfo {
 	return f.info
@@ -57,7 +67,7 @@ func (f *Search) GetFileBase() *FileBase {
 }
 
 //set root path
-func (f *Search) SetRootPath(path string) error {
+func (f *Search) SetCore(path string, wg *sync.WaitGroup) error {
 	//check
 	if path == "" {
 		return errors.New("invalid path parameter")
@@ -65,6 +75,7 @@ func (f *Search) SetRootPath(path string) error {
 	if f.initDone {
 		return nil
 	}
+	f.wg = wg
 
 	//format search root path
 	f.rootPath = fmt.Sprintf("%v/%v", path, define.SubDirOfSearch)
@@ -91,6 +102,6 @@ func (f *Search) initIndex() {
 	f.ts.SetDataPath(f.rootPath)
 
 	//init file base and info
-	f.base = NewFileBase(f.ts)
-	f.info = NewFileInfo(f.ts)
+	f.base = NewFileBase(f.ts, f.wg)
+	f.info = NewFileInfo(f.ts, f.wg)
 }

@@ -4,9 +4,11 @@ import (
 	"errors"
 	"github.com/andyzhou/pond/define"
 	"github.com/andyzhou/pond/json"
+	"github.com/andyzhou/tinylib/queue"
 	"github.com/andyzhou/tinysearch"
 	tDefine "github.com/andyzhou/tinysearch/define"
 	tJson "github.com/andyzhou/tinysearch/json"
+	"sync"
 )
 
 /*
@@ -17,18 +19,28 @@ import (
 //face info
 type FileBase struct {
 	ts *tinysearch.Service //reference
+	wg *sync.WaitGroup //reference
+	queue *queue.Queue
 }
 
 //construct
-func NewFileBase(ts *tinysearch.Service) *FileBase {
+func NewFileBase(ts *tinysearch.Service, wg *sync.WaitGroup) *FileBase {
 	this := &FileBase{
 		ts: ts,
+		wg: wg,
+		queue: queue.NewQueue(),
 	}
 	this.interInit()
 	return this
 }
 
+//quit
+func (f *FileBase) Quit() {
+	f.queue.Quit()
+}
+
 //get batch filter by removed and sort by blocks
+//sync opt
 func (f *FileBase) GetBatchByBlocks(
 			blocksMin, blocksMax int64,
 			pageSize int,
@@ -71,6 +83,7 @@ func (f *FileBase) GetBatchByBlocks(
 }
 
 //get batch removed blocks
+//sync opt
 func (f *FileBase) GetBatchByRemoved(
 			page, pageSize int,
 		) (int64, []*json.FileBaseJson, error) {
@@ -106,6 +119,7 @@ func (f *FileBase) GetBatchByRemoved(
 
 //get batch info
 //sort by block size asc
+//sync opt
 func (f *FileBase) QueryBatch(
 			filters []*tJson.FilterField,
 			sorts []*tJson.SortField,
@@ -158,6 +172,7 @@ func (f *FileBase) QueryBatch(
 }
 
 //get one base file info
+//sync opt
 func (f *FileBase) GetOne(md5Val string) (*json.FileBaseJson, error) {
 	//check
 	if md5Val == "" {
@@ -187,7 +202,43 @@ func (f *FileBase) GetOne(md5Val string) (*json.FileBaseJson, error) {
 }
 
 //del one base file info
+//async opt
 func (f *FileBase) DelOne(md5 string) error {
+	//check
+	if md5 == "" {
+		return errors.New("invalid parameter")
+	}
+	if f.ts == nil {
+		return errors.New("inter search engine not init")
+	}
+
+	//save into queue
+	_, err := f.queue.SendData(md5)
+	return err
+}
+
+//add one base file info
+//async opt
+func (f *FileBase) AddOne(obj *json.FileBaseJson) error {
+	//check
+	if obj == nil || obj.Md5 == "" {
+		return errors.New("invalid parameter")
+	}
+	if f.ts == nil {
+		return errors.New("inter search engine not init")
+	}
+
+	//save into queue
+	_, err := f.queue.SendData(obj)
+	return err
+}
+
+////////////////
+//private func
+////////////////
+
+//del one base info
+func (f *FileBase) delOneBase(md5 string) error {
 	//check
 	if md5 == "" {
 		return errors.New("invalid parameter")
@@ -205,8 +256,8 @@ func (f *FileBase) DelOne(md5 string) error {
 	return err
 }
 
-//add one base file info
-func (f *FileBase) AddOne(obj *json.FileBaseJson) error {
+//add one base info
+func (f *FileBase) addOneBase(obj *json.FileBaseJson) error {
 	//check
 	if obj == nil || obj.Md5 == "" {
 		return errors.New("invalid parameter")
@@ -224,8 +275,48 @@ func (f *FileBase) AddOne(obj *json.FileBaseJson) error {
 	return err
 }
 
-//inter init
-func (f *FileBase) interInit() {
+//cb for queue quit opt
+func (f *FileBase) cbForQueueQuit() {
+	if f.wg != nil {
+		f.wg.Done()
+	}
+}
+
+//cb for queue opt
+func (f *FileBase) cbForQueueOpt(
+	data interface{}) (interface{}, error) {
+	var (
+		err error
+	)
+	//check
+	if data == nil {
+		return nil, errors.New("invalid parameter")
+	}
+
+	//do diff opt by data type
+	switch data.(type) {
+	case *json.FileBaseJson:
+		{
+			//for save opt
+			obj, _ := data.(*json.FileBaseJson)
+			err = f.addOneBase(obj)
+		}
+	case string:
+		{
+			//for delete opt
+			md5, _ := data.(string)
+			err = f.delOneBase(md5)
+		}
+	default:
+		{
+			err = errors.New("invalid data type")
+		}
+	}
+	return nil, err
+}
+
+//init index
+func (f *FileBase) initIndex() {
 	if f.ts == nil {
 		return
 	}
@@ -234,4 +325,15 @@ func (f *FileBase) interInit() {
 	if err != nil {
 		panic(any(err))
 	}
+}
+
+//inter init
+func (f *FileBase) interInit() {
+	//init index
+	f.initIndex()
+
+	//set cb for queue opt
+	f.queue.SetCallback(f.cbForQueueOpt)
+	f.queue.SetQuitCallback(f.cbForQueueQuit)
+	f.wg.Add(1)
 }

@@ -6,6 +6,7 @@ import (
 	"github.com/andyzhou/pond/define"
 	"github.com/andyzhou/pond/json"
 	"github.com/andyzhou/pond/storage"
+	"sync"
 )
 
 /*
@@ -13,15 +14,30 @@ import (
  * - service one single node or group data
  */
 
+//global variable
+var (
+	_pond *Pond
+	_pondOnce sync.Once
+	_wg sync.WaitGroup
+)
+
 //face info
 type Pond struct {
 	storage *storage.Storage
 }
 
+//get single instance
+func GetPond() *Pond {
+	_pondOnce.Do(func() {
+		_pond = NewPond()
+	})
+	return _pond
+}
+
 //construct
 func NewPond() *Pond {
 	this := &Pond{
-		storage: storage.NewStorage(),
+		storage: storage.NewStorage(&_wg),
 	}
 	return this
 }
@@ -31,11 +47,17 @@ func (f *Pond) Quit() {
 	f.storage.Quit()
 }
 
+//wait
+func (f *Pond) Wait() {
+	_wg.Wait()
+}
+
 ////////////////////
 //api for file index
 ////////////////////
 
 //get batch file info by create time
+//return total, []*FileInfoJson, error
 func (f *Pond) GetFiles(
 			page, pageSize int,
 		) (int64, []*json.FileInfoJson, error) {
@@ -85,7 +107,7 @@ func (f *Pond) SetConfig(cfg *conf.Config) error {
 	if cfg.FileActiveHours <= 0 {
 		cfg.FileActiveHours = define.DefaultChunkActiveHours
 	}
-	return f.storage.SetConfig(cfg)
+	return f.storage.SetConfig(cfg, &_wg)
 }
 
 //gen new config

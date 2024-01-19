@@ -2,13 +2,12 @@ package chunk
 
 import (
 	"errors"
-	"github.com/andyzhou/pond/define"
-	"log"
 	"time"
 )
 
 /*
  * chunk read face
+ * - support queue and direct opt
  */
 
 //read file
@@ -22,90 +21,69 @@ func (f *Chunk) ReadFile(
 	}
 
 	//check lazy mode
-	if !f.isLazyMode {
+	if !f.readLazy {
 		//direct read data
 		return f.directReadData(offset, size)
-	}
-
-	//for lazy mode
-	if f.readChan == nil ||
-		len(f.readChan) >= define.DefaultChunkChanSize {
-		return nil, errors.New("chunk data read chan invalid")
 	}
 
 	//init read request
 	req := ReadReq{
 		Offset: offset,
 		Size: size,
-		Resp: make(chan ReadResp, 1),
 	}
 
 	//send request
-	f.readChan <- req
-
-	//wait for response
-	resp, isOk := <- req.Resp
-	if !isOk && &resp == nil {
-		return nil, errors.New("can't get response data")
+	result, err := f.readQueue.SendData(req, true)
+	if err != nil {
+		return nil, err
 	}
-	return resp.Data, resp.Err
+	respObj, ok := result.(ReadResp)
+	if !ok || &respObj == nil {
+		return nil, errors.New("invalid response data")
+	}
+	if respObj.Err != nil {
+		return nil, respObj.Err
+	}
+	return respObj.Data, nil
 }
 
 /////////////////
 //private func
 /////////////////
 
-//read process
-func (f *Chunk) readProcess() {
-	var (
-		req  ReadReq
-		isOk bool
-		m    any = nil
-	)
-
-	//defer
-	defer func() {
-		if err := recover(); err != m {
-			log.Printf("chunk.readProcess panic, err:%v\n", err)
-		}
-		//close chan
-		close(f.readChan)
-	}()
-
-	//loop
-	for {
-		select {
-		case req, isOk = <- f.readChan:
-			if isOk {
-				//read data
-				data, err := f.readData(&req)
-
-				//send response
-				resp := ReadResp{
-					Data: data,
-					Err: err,
-				}
-				req.Resp <- resp
-			}
-		case <- f.readCloseChan:
-			{
-				return
-			}
-		}
-	}
-}
-
-//read file data
-func (f *Chunk) readData(req *ReadReq) ([]byte, error) {
+//cb for read queue
+func (f *Chunk) cbForReadOpt(
+		data interface{},
+	) (interface{}, error) {
 	//check
-	if req == nil || req.Offset < 0 || req.Size <= 0 {
+	if data == nil {
 		return nil, errors.New("invalid parameter")
 	}
-	return f.directReadData(req.Offset, req.Size)
+	req, ok := data.(ReadReq)
+	if !ok || &req == nil {
+		return nil, errors.New("data format should be `WriteReq`")
+	}
+
+	//get key data
+	offset := req.Offset
+	size := req.Size
+
+	//direct read data
+	byteData, err := f.directReadData(offset, size)
+	if err != nil {
+		return nil, err
+	}
+
+	//format response
+	resp := ReadResp{
+		Data: byteData,
+	}
+	return resp, nil
 }
 
 //direct read file data
-func (f *Chunk) directReadData(offset, size int64) ([]byte, error) {
+func (f *Chunk) directReadData(
+	offset, size int64) ([]byte, error) {
 	//check
 	if offset < 0 || size <= 0 {
 		return nil, errors.New("invalid parameter")
@@ -127,6 +105,8 @@ func (f *Chunk) directReadData(offset, size int64) ([]byte, error) {
 	byteData := make([]byte, size)
 
 	//read real data and sync active time
+	f.fileLocker.Lock()
+	defer f.fileLocker.Unlock()
 	_, err := f.file.ReadAt(byteData, offset)
 	f.lastActiveTime = time.Now().Unix()
 	return byteData, err
