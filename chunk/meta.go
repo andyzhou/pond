@@ -9,6 +9,8 @@ import (
 
 /*
  * chunk meta file opt face
+ * @author <AndyZhou>
+ * @mail <diudiu8848@163.com>
  * - one chunk file, one meta file
  */
 

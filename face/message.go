@@ -2,6 +2,8 @@ package face
 
 /*
  * message data face
+ * @author <AndyZhou>
+ * @mail <diudiu8848@163.com>
  * - application `IMessage`
  */
 

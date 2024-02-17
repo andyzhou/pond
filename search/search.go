@@ -11,6 +11,8 @@ import (
 
 /*
  * inter search face
+ * @author <AndyZhou>
+ * @mail <diudiu8848@163.com>
  * - all file info storage into local search
  * - only service current node data
  * - base on tiny search

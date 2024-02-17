@@ -9,6 +9,8 @@ import (
 
 /*
  * chunk data file base opt face
+ * @author <AndyZhou>
+ * @mail <diudiu8848@163.com>
  * - open and close chunk file
  */
 

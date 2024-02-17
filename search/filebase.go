@@ -13,6 +13,8 @@ import (
 
 /*
  * file base info search face
+ * @author <AndyZhou>
+ * @mail <diudiu8848@163.com>
  * - file md5 value as primary key
  */
 

@@ -9,6 +9,8 @@ import (
 
 /*
  * chunk write face
+ * @author <AndyZhou>
+ * @mail <diudiu8848@163.com>
  * - header + realData as whole data value
  * - support queue and direct opt
  */

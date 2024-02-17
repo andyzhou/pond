@@ -8,6 +8,8 @@ import (
 
 /*
  * chunk read face
+ * @author <AndyZhou>
+ * @mail <diudiu8848@163.com>
  * - support queue and direct opt
  */
 

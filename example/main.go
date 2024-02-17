@@ -9,9 +9,14 @@ import (
 	"time"
 )
 
+/*
+ * example code
+ * @author <AndyZhou>
+ * @mail <diudiu8848@163.com>
+ */
+
 const (
 	DataDir = "./private"
-	ShortUrl = "50w5wt" //"dMVRt8"
 )
 
 //write data

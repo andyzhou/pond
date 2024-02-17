@@ -7,6 +7,8 @@ import (
 
 /*
  * packet header data opt
+ * @author <AndyZhou>
+ * @mail <diudiu8848@163.com>
  */
 
 //unpack header

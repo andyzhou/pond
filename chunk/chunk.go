@@ -18,6 +18,8 @@ import (
 
 /*
  * one chunk file face
+ * @author <AndyZhou>
+ * @mail <diudiu8848@163.com>
  * - one chunk, one meta and data file
  * - read/write real file chunk data
  * - use queue mode for concurrency and performance

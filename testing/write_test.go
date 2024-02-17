@@ -1,6 +1,5 @@
 package testing
 
-
 import (
 	"fmt"
 	"github.com/andyzhou/pond"
@@ -10,6 +9,8 @@ import (
 
 /*
  * write testing code
+ * @author <AndyZhou>
+ * @mail <diudiu8848@163.com>
  */
 
 //read data

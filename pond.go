@@ -10,7 +10,9 @@ import (
 )
 
 /*
- * main interface
+ * api interface
+ * @author <AndyZhou>
+ * @mail <diudiu8848@163.com>
  * - service one single node or group data
  */
 

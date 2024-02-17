@@ -12,6 +12,8 @@ import (
 
 /*
  * file info search face
+ * @author <AndyZhou>
+ * @mail <diudiu8848@163.com>
  * - file short url as primary key
  */
 

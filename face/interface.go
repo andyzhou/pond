@@ -2,6 +2,8 @@ package face
 
 /*
  * interface define
+ * @author <AndyZhou>
+ * @mail <diudiu8848@163.com>
  */
 
 //message

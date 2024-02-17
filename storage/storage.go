@@ -17,6 +17,8 @@ import (
 
 /*
  * inter storage face
+ * @author <AndyZhou>
+ * @mail <diudiu8848@163.com>
  * - include meta and chunk data
  * - write/del request in queues
  */

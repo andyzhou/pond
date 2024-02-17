@@ -18,6 +18,8 @@ import (
 
 /*
  * chunk meta file face
+ * @author <AndyZhou>
+ * @mail <diudiu8848@163.com>
  * - all chunk info storage as one meta file
  */
 

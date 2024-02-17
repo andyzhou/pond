@@ -13,6 +13,8 @@ import (
 
 /*
  * inter data manager
+ * @author <AndyZhou>
+ * @mail <diudiu8848@163.com>
  * - meta, chunk data manage
  */
 
