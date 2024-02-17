@@ -18,4 +18,12 @@ type Config struct {
 Please see `example` sub dir.
 
 # Testing
-go test -bench="Read" -benchtime=5s .
+```
+cd testing
+go test -v
+go test -v -run="Read"
+
+go test -bench=.
+go test -bench=Read -benchmem -benchtime=20s
+
+```
