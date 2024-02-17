@@ -3,7 +3,6 @@ package chunk
 import (
 	"bytes"
 	"errors"
-	"log"
 	"math"
 	"time"
 )
@@ -145,7 +144,6 @@ func (f *Chunk) directWriteData(
 	//format header data
 	header, _ := f.packHeader(md5, realBlockSize, dataLen)
 	headerLen := len(header)
-	log.Printf("chunk.directWriteData, header:%v, headerLen:%v", header, headerLen)
 
 	//init whole data
 	//format: header + realData
@@ -157,7 +155,6 @@ func (f *Chunk) directWriteData(
 
 	//copy whole data to dest byte buff
 	copy(byteData, byteBuff.Bytes())
-	log.Printf("chunk.directWriteData, byteBuffLen:%v", byteDataLen)
 
 	//write block buffer data into chunk
 	_, err := f.file.WriteAt(byteData, offset)

@@ -3,7 +3,6 @@ package chunk
 import (
 	"errors"
 	"github.com/andyzhou/pond/face"
-	"log"
 	"time"
 )
 
@@ -120,9 +119,13 @@ func (f *Chunk) directReadData(
 	if err != nil {
 		return nil, err
 	}
-	msg, _ := pack.UnPack(header)
-	log.Printf("chunk.read, header info, md5:%v, blocks:%v, len:%v",
-		msg.GetMd5(), msg.GetBlocks(), msg.GetLen())
+	msg, subErr := pack.UnPack(header)
+	if subErr != nil {
+		return nil, err
+	}
+	if size > msg.GetLen() {
+		return nil, errors.New("request size exceed data size")
+	}
 
 	//read real data
 	_, err = f.file.ReadAt(byteData, offset + headerLen)
