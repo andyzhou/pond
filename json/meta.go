@@ -1,5 +1,7 @@
 package json
 
+import "github.com/andyzhou/tinylib/util"
+
 /*
  * meta json info
  * - chunk and meta info
@@ -14,7 +16,7 @@ type ChunkFileJson struct {
 	Size    int64 `json:"size"`    //current size
 	Files   int64 `json:"files"`   //total files
 	MaxSize int64 `json:"maxSize"` //max allow size
-	BaseJson
+	util.BaseJson
 }
 
 //all chunks meta snap json
@@ -22,7 +24,7 @@ type MetaJson struct {
 	FileId  int64   `json:"fileId"`  //inter dynamic data file id
 	ChunkId int64   `json:"chunkId"` //inter chunk storage file id
 	Chunks  []int64 `json:"chunks"`  //active chunk file ids
-	BaseJson
+	util.BaseJson
 }
 
 //construct

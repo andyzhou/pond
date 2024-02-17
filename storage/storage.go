@@ -46,9 +46,10 @@ func (f *Storage) Quit() {
 }
 
 //get file info list from search
+//sync opt
 func (f *Storage) GetFilesInfo(
-			page, pageSize int,
-		) (int64, []*json.FileInfoJson, error) {
+		page, pageSize int,
+	) (int64, []*json.FileInfoJson, error) {
 	//check
 	if !f.initDone {
 		return 0, nil, errors.New("config didn't setup")
@@ -60,7 +61,8 @@ func (f *Storage) GetFilesInfo(
 
 //delete data
 //just remove file info from search
-func (f *Storage) DeleteData(shortUrl string) error {
+func (f *Storage) DeleteData(
+	shortUrl string) error {
 	//check
 	if shortUrl == "" {
 		return errors.New("invalid parameter")
@@ -113,9 +115,9 @@ func (f *Storage) DeleteData(shortUrl string) error {
 //extend para: offset, length
 //return fileData, error
 func (f *Storage) ReadData(
-			shortUrl string,
-			offsetAndLength ...int64,
-		) ([]byte, error) {
+		shortUrl string,
+		offsetAndLength ...int64,
+	) ([]byte, error) {
 	var (
 		assignedOffset, assignedLength int64
 	)
@@ -130,8 +132,11 @@ func (f *Storage) ReadData(
 	//get file info
 	fileInfoSearch := search.GetSearch().GetFileInfo()
 	fileInfo, err := fileInfoSearch.GetOne(shortUrl)
-	if err != nil || fileInfo == nil {
+	if err != nil {
 		return nil, err
+	}
+	if fileInfo == nil {
+		return nil, errors.New("can't get file info")
 	}
 
 	//get relate chunk data
@@ -278,7 +283,7 @@ func (f *Storage) overwriteData(shortUrl string, data[]byte) error {
 	}
 
 	//overwrite chunk data
-	resp := activeChunk.WriteFile(data, offset)
+	resp := activeChunk.WriteFile(fileMd5, data, offset)
 	if resp == nil {
 		return errors.New("can't get chunk write file response")
 	}
@@ -331,6 +336,7 @@ func (f *Storage) writeNewData(data []byte) (string, error) {
 		//not check same data
 		//use rand num + time stamp as md5 base value
 		now := time.Now().UnixNano()
+		rand.Seed(now)
 		randInt := rand.Int63n(now)
 		md5ValBase := fmt.Sprintf("%v:%v", randInt, now)
 		fileMd5, err = f.Md5Sum([]byte(md5ValBase))
@@ -396,7 +402,7 @@ func (f *Storage) writeNewData(data []byte) (string, error) {
 
 	if needWriteChunkData && activeChunk != nil {
 		//write file base byte data
-		resp := activeChunk.WriteFile(data, offset)
+		resp := activeChunk.WriteFile(fileBaseObj.Md5, data, offset)
 		if resp == nil {
 			return shortUrl, errors.New("can't get chunk write file response")
 		}

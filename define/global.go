@@ -15,7 +15,7 @@ const (
 
 // default
 const (
-	DefaultRootPath = "./"
+	DefaultPacketMaxSize = 2048 //2KB
 )
 
 // others

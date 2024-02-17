@@ -17,10 +17,6 @@ func readData(p *pond.Pond) ([]byte, error) {
 
 //test read api
 func TestRead(t *testing.T) {
-	var (
-		err error
-	)
-
 	//init pond
 	p, err := InitPond()
 	if err != nil {

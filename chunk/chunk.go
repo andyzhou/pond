@@ -23,13 +23,12 @@ import (
  * - use queue mode for concurrency and performance
  */
 
-
 //face info
 type Chunk struct {
 	cfg *conf.Config //reference
 	chunkObj *json.ChunkFileJson
 	gob *util.Gob
-	file *os.File
+	file *os.File //chunk file handler
 	readQueue *queue.Queue
 	writeQueue *queue.Queue
 	metaTicker *queue.Ticker

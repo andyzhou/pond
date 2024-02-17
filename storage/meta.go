@@ -93,7 +93,7 @@ func (f *Meta) CreateNewChunk() *json.ChunkFileJson {
 	//defer
 	defer func() {
 		//save meta file
-		f.SaveMeta()
+		f.SaveMeta(true)
 	}()
 
 	//sync into meta obj with locker

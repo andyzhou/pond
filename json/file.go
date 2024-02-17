@@ -1,5 +1,7 @@
 package json
 
+import "github.com/andyzhou/tinylib/util"
+
 /*
  * file json info
  * - all data storage in local search
@@ -16,7 +18,7 @@ type FileInfoJson struct {
 	Offset      int64  `json:"offset"`
 	Blocks      int64  `json:"blocks"`
 	CreateAt    int64  `json:"createAt"`
-	BaseJson
+	util.BaseJson
 }
 
 //file base json
@@ -32,7 +34,7 @@ type FileBaseJson struct {
 	Removed     bool   `json:"removed"`
 	Backed      bool   `json:"backed"` //backed or not
 	CreateAt    int64  `json:"createAt"`
-	BaseJson
+	util.BaseJson
 }
 
 //construct

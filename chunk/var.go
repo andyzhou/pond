@@ -14,6 +14,7 @@ type (
 
 	//write req
 	WriteReq struct {
+		Md5 string
 		Data []byte
 		Offset int64 //assigned offset for overwrite
 	}

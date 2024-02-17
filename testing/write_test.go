@@ -22,10 +22,6 @@ func writeData(p *pond.Pond) (string, error) {
 
 //test write api
 func TestWrite(t *testing.T) {
-	var (
-		err error
-	)
-
 	//init pond
 	p, err := InitPond()
 	if err != nil {
@@ -34,8 +30,8 @@ func TestWrite(t *testing.T) {
 	}
 
 	//write data
-	shortUrl, err := writeData(p)
-	t.Logf("write data, shortUrl:%v, err:%v\n", shortUrl, err)
+	shortUrl, subErr := writeData(p)
+	t.Logf("write data, shortUrl:%v, err:%v\n", shortUrl, subErr)
 }
 
 //bench write api

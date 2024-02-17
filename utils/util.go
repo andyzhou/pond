@@ -17,7 +17,7 @@ type Utils struct {
 }
 
 //md5 sum binary
-func (f *Utils)  Md5Sum(data []byte) (string, error) {
+func (f *Utils) Md5Sum(data []byte) (string, error) {
 	//check
 	if data == nil || len(data) <= 0 {
 		return "", errors.New("invalid parameter")

@@ -25,8 +25,6 @@ const (
 
 // default value
 const (
-	DefaultChunkReadProcess = 3
-	DefaultChunkChanSize    = 1024
 	DefaultChunkBlockSize   = 128          //min block data size
 	DefaultChunkMaxSize     = DataSizeOfTB //one TB
 	DefaultChunkMultiIncr   = 0.1

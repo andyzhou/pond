@@ -11,20 +11,24 @@ import (
 
 const (
 	DataDir = "./private"
-	ShortUrl = "g88sUh" //"dMVRt8"
+	ShortUrl = "50w5wt" //"dMVRt8"
 )
 
 //write data
-func writeData(p *pond.Pond, shortUrls ...string) {
+func writeData(p *pond.Pond, shortUrls ...string) (string, error) {
 	data := []byte(fmt.Sprintf("hello-%v", time.Now().Unix()))
 	shortUrl, subErr := p.WriteData(data, shortUrls...)
 	log.Printf("shortUrl:%v, err:%v\n", shortUrl, subErr)
+	return shortUrl, subErr
 }
 
 //read data
-func readData(p *pond.Pond) {
-	dataByte, err := p.ReadData(ShortUrl)
-	log.Printf("read data, data:%v, err:%v\n", string(dataByte), err)
+func readData(p *pond.Pond, shortUrl string) {
+	if p == nil || shortUrl == "" {
+		return
+	}
+	dataByte, err := p.ReadData(shortUrl)
+	log.Printf("read data, shortUrl:%v, data:%v, err:%v\n", shortUrl, string(dataByte), err)
 }
 
 //get file info list
@@ -61,17 +65,13 @@ func main() {
 	}
 
 	//file info list
-	getFileInfos(p)
-
-	//read data
-	//readData(p)
+	//getFileInfos(p)
 
 	//write data
-	//writeData(p)
+	shortUrl, _ := writeData(p)
 
-	//for i := 0; i < 50; i++ {
-	//	writeData(p)
-	//}
+	//read data
+	readData(p, shortUrl)
 
 	//quit
 	p.Quit()

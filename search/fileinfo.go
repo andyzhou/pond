@@ -165,8 +165,8 @@ func (f *FileInfo) AddOne(obj *json.FileInfoJson) error {
 		return errors.New("inter search engine not init")
 	}
 
-	//save into queue
-	_, err := f.queue.SendData(obj)
+	//save into search
+	err := f.addOneDoc(obj)
 	return err
 }
 

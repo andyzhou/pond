@@ -1,19 +1,23 @@
 package chunk
 
 import (
+	"bytes"
 	"errors"
+	"log"
 	"math"
 	"time"
 )
 
 /*
  * chunk write face
+ * - header + realData as whole data value
  * - support queue and direct opt
  */
 
 //write file
 //return ChunkWriteResp, error
 func (f *Chunk) WriteFile(
+			md5 string,
 			data []byte,
 			offsets ...int64,
 		) *WriteResp {
@@ -23,7 +27,7 @@ func (f *Chunk) WriteFile(
 	)
 
 	//check
-	if data == nil {
+	if md5 == "" || data == nil {
 		resp.Err = errors.New("invalid parameter")
 		return &resp
 	}
@@ -31,7 +35,7 @@ func (f *Chunk) WriteFile(
 	//check lazy mode
 	if !f.writeLazy {
 		//direct write data
-		return f.directWriteData(data, offsets...)
+		return f.directWriteData(md5, data, offsets...)
 	}
 
 	//detect offset
@@ -41,6 +45,7 @@ func (f *Chunk) WriteFile(
 
 	//init write request
 	req := WriteReq{
+		Md5: md5,
 		Offset: offset,
 		Data: data,
 	}
@@ -77,16 +82,18 @@ func (f *Chunk) cbForWriteOpt(
 	}
 
 	//get key data
+	md5 := req.Md5
 	offset := req.Offset
 	realData := req.Data
 
 	//direct write data
-	resp := f.directWriteData(realData, offset)
+	resp := f.directWriteData(md5, realData, offset)
 	return *resp, nil
 }
 
 //direct write data
 func (f *Chunk) directWriteData(
+		md5 string,
 		data []byte,
 		offsets ...int64,
 	) *WriteResp {
@@ -97,7 +104,7 @@ func (f *Chunk) directWriteData(
 	)
 
 	//check
-	if data == nil {
+	if md5 == "" || data == nil {
 		resp.Err = errors.New("invalid parameter")
 		return &resp
 	}
@@ -128,36 +135,52 @@ func (f *Chunk) directWriteData(
 	}
 
 	//calculate real block size
-	dataSize := float64(len(data))
+	dataLen := int64(len(data))
+	dataSize := float64(dataLen)
 	realBlocks := int64(math.Ceil(dataSize / float64(f.cfg.ChunkBlockSize)))
 
 	//create block buffer
 	realBlockSize := realBlocks * f.cfg.ChunkBlockSize
-	byteData := make([]byte, realBlockSize)
-	copy(byteData, data)
+
+	//format header data
+	header, _ := f.packHeader(md5, realBlockSize, dataLen)
+	headerLen := len(header)
+	log.Printf("chunk.directWriteData, header:%v, headerLen:%v", header, headerLen)
+
+	//init whole data
+	//format: header + realData
+	byteDataLen := int64(headerLen) + realBlockSize
+	byteData := make([]byte, byteDataLen)
+	byteBuff := bytes.NewBuffer(nil)
+	byteBuff.Write(header)
+	byteBuff.Write(data)
+
+	//copy whole data to dest byte buff
+	copy(byteData, byteBuff.Bytes())
+	log.Printf("chunk.directWriteData, byteBuffLen:%v", byteDataLen)
 
 	//write block buffer data into chunk
 	_, err := f.file.WriteAt(byteData, offset)
-	chunkOldSize := f.chunkObj.Size
+	if err != nil {
+		resp.Err = err
+		return &resp
+	}
+
+	oldOffset := f.chunkObj.Size
 	f.lastActiveTime = time.Now().Unix()
-	if err == nil {
-		if !assignedOffset {
-			//update chunk obj
-			f.chunkObj.Files++
-			f.chunkObj.Size += realBlockSize
-			//update meta file
-			f.updateMetaFile()
-		}
+	if !assignedOffset {
+		//update chunk obj
+		f.chunkObj.Files++
+		f.chunkObj.Size += byteDataLen
+		//update meta file
+		f.updateMetaFile(true)
 	}
 
 	//format resp
-	resp.NewOffSet = chunkOldSize
+	resp.NewOffSet = oldOffset
 	resp.BlockSize = realBlockSize
 	if assignedOffset {
 		resp.NewOffSet = offset
-	}
-	if err != nil {
-		resp.Err = err
 	}
 	return &resp
 }

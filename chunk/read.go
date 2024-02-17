@@ -2,6 +2,8 @@ package chunk
 
 import (
 	"errors"
+	"github.com/andyzhou/pond/face"
+	"log"
 	"time"
 )
 
@@ -101,13 +103,29 @@ func (f *Chunk) directReadData(
 		return nil, errors.New("chunk file closed")
 	}
 
+	//get header message
+	pack := face.NewPacket()
+	headerLen := pack.GetHeadLen()
+
 	//create block buffer
+	header := make([]byte, headerLen)
 	byteData := make([]byte, size)
 
 	//read real data and sync active time
 	f.fileLocker.Lock()
 	defer f.fileLocker.Unlock()
-	_, err := f.file.ReadAt(byteData, offset)
+
+	//read and unpack header
+	_, err := f.file.ReadAt(header, offset)
+	if err != nil {
+		return nil, err
+	}
+	msg, _ := pack.UnPack(header)
+	log.Printf("chunk.read, header info, md5:%v, blocks:%v, len:%v",
+		msg.GetMd5(), msg.GetBlocks(), msg.GetLen())
+
+	//read real data
+	_, err = f.file.ReadAt(byteData, offset + headerLen)
 	f.lastActiveTime = time.Now().Unix()
 	return byteData, err
 }
