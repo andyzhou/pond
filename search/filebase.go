@@ -99,12 +99,25 @@ func (f *FileBase) GetBatchByRemoved(
 
 	//setup filters
 	filters := make([]*tJson.FilterField, 0)
+
+	//filter by removed
 	filterByRemoved := &tJson.FilterField{
 		Kind: tDefine.FilterKindBoolean,
 		Field: define.SearchFieldOfRemoved,
 		Val: true,
 		IsMust: true,
 	}
+
+	////filter by size
+	//fileSizeMin := fileSize
+	//fileSizeMax := fileSizeMin + define.DefaultChunkBlockSize
+	//filterBySize := &tJson.FilterField{
+	//	Kind: tDefine.FilterKindNumericRange,
+	//	MinFloatVal: float64(fileSize),
+	//	MaxFloatVal: float64(fileSizeMax),
+	//	IsMust: true,
+	//}
+
 	filters = append(filters, filterByRemoved)
 
 	//setup sorts

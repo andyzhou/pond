@@ -10,6 +10,7 @@ const (
 const (
 	SearchFieldOfCreateAt = "createAt"
 	SearchFieldOfRemoved  = "removed"
+	SearchFieldOfSize	  = "size"
 	SearchFieldOfBlocks   = "blocks"
 )
 

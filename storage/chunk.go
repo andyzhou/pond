@@ -204,5 +204,6 @@ func (f *Chunk) loadRemovedFiles() {
 			break
 		}
 		f.removedFiles = append(f.removedFiles, recSlice...)
+		page++
 	}
 }

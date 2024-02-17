@@ -16,14 +16,22 @@ import (
 
 const (
 	DataDir = "./private"
+	ShortUrl = "ko8IJ5"
 )
+
+//del data
+func delData(p *pond.Pond, shortUrl string) error {
+	err := p.DelData(shortUrl)
+	log.Printf("del data, shortUrl:%v, err:%v\n", shortUrl, err)
+	return err
+}
 
 //write data
 func writeData(p *pond.Pond, shortUrls ...string) (string, error) {
 	//now := time.Now().Unix()
 	data := []byte(fmt.Sprintf("hello-%v", 2))
 	shortUrl, subErr := p.WriteData(data, shortUrls...)
-	log.Printf("shortUrl:%v, err:%v\n", shortUrl, subErr)
+	log.Printf("write data, shortUrl:%v, err:%v\n", shortUrl, subErr)
 	return shortUrl, subErr
 }
 
@@ -75,10 +83,13 @@ func main() {
 	//getFileInfos(p)
 
 	//write data
-	shortUrl, _ := writeData(p)
+	//shortUrl, _ := writeData(p)
 
 	//read data
-	readData(p, shortUrl)
+	//readData(p, shortUrl)
+
+	//del data
+	delData(p, ShortUrl)
 
 	//quit
 	p.Quit()
