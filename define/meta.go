@@ -4,7 +4,6 @@ import "time"
 
 const (
 	ChunksMetaFile     = "chunks.meta"
-	ChunksMetaSaveRate = 5 //xx seconds
 )
 
 // default value

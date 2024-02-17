@@ -4,6 +4,8 @@ import "github.com/andyzhou/tinylib/util"
 
 /*
  * file json info
+ * @author <AndyZhou>
+ * @mail <diudiu8848@163.com>
  * - all data storage in local search
  */
 

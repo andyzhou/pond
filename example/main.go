@@ -59,6 +59,7 @@ func main() {
 	//gen new config
 	cfg := p.GenConfig()
 	cfg.DataPath = dataPath
+	cfg.WriteLazy = true
 	cfg.FixedBlockSize = true
 	cfg.ChunkBlockSize = define.DefaultChunkBlockSize
 

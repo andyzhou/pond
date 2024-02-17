@@ -4,6 +4,8 @@ import "github.com/andyzhou/tinylib/util"
 
 /*
  * meta json info
+ * @author <AndyZhou>
+ * @mail <diudiu8848@163.com>
  * - chunk and meta info
  * - all meta file storage as gob format.
  * - update data real time

@@ -100,7 +100,7 @@ func (f *Pond) SetConfig(cfg *conf.Config) error {
 	if cfg == nil || cfg.DataPath == "" {
 		return errors.New("invalid parameter")
 	}
-	if cfg.ChunkSizeMax <= 0 {
+	if cfg.ChunkSizeMax < define.DefaultChunkMaxSize {
 		cfg.ChunkSizeMax = define.DefaultChunkMaxSize
 	}
 	if cfg.ChunkBlockSize <= 0 {

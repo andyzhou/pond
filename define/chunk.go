@@ -4,7 +4,6 @@ package define
 const (
 	FileErrOfEOF          = "EOF"
 	FilePerm              = 0755
-	ChunkFileMetaSaveRate = 1 //xx seconds
 	ChunkMultiTryTimes    = 3
 )
 
@@ -12,12 +11,11 @@ const (
 const (
 	ChunkMetaFilePara = "chunk-%v.meta" //chunk meta file
 	ChunkDataFilePara = "chunk-%v.data" //chunk data file
-	TempZipFilePara   = "%s/%s-%d.zip"  //path/zipFile
 )
 
 // data size
 const (
-	DataSizeOfKB = 1024
+	DataSizeOfKB = 1024 //1kb
 	DataSizeOfMB = DataSizeOfKB * 1024
 	DataSizeOfGB = DataSizeOfMB * 1000
 	DataSizeOfTB = DataSizeOfGB * 1000
