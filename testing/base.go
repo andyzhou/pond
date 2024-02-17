@@ -8,7 +8,7 @@ import (
 
 const (
 	DataDir = "../private"
-	ShortUrl = "EVBJFp" //"dMVRt8"
+	ShortUrl = "dkU9Ud" //"dMVRt8"
 )
 
 //init pond
@@ -26,6 +26,13 @@ func InitPond() (*pond.Pond, error) {
 	//set config
 	cfg := p.GenConfig()
 	cfg.DataPath = dataPath
+	cfg.FixedBlockSize = true
+
+	//set config
+	err = p.SetConfig(cfg)
+	if err != nil {
+		return nil, err
+	}
 
 	return p, err
 }
