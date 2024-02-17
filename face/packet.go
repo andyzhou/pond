@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/binary"
 	"errors"
-	"fmt"
 	"github.com/andyzhou/pond/define"
 )
 
@@ -82,11 +81,11 @@ func (f *Packet) UnPack(header []byte) (IMessage, error) {
 		return nil, err
 	}
 
-	//check length
-	if length > f.maxPackSize {
-		tips := fmt.Sprintf("too large message data received, message length:%d", length)
-		return nil, errors.New(tips)
-	}
+	////check length
+	//if length > f.maxPackSizemaxPackSize {
+	//	tips := fmt.Sprintf("too large message data received, message length:%d", length)
+	//	return nil, errors.New(tips)
+	//}
 
 	//init message data
 	message := NewMessage()
