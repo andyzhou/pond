@@ -6,7 +6,6 @@ import (
 	"github.com/andyzhou/pond/define"
 	"log"
 	"os"
-	"time"
 )
 
 /*
@@ -21,7 +20,8 @@ const (
 
 //write data
 func writeData(p *pond.Pond, shortUrls ...string) (string, error) {
-	data := []byte(fmt.Sprintf("hello-%v", time.Now().Unix()))
+	//now := time.Now().Unix()
+	data := []byte(fmt.Sprintf("hello-%v", 2))
 	shortUrl, subErr := p.WriteData(data, shortUrls...)
 	log.Printf("shortUrl:%v, err:%v\n", shortUrl, subErr)
 	return shortUrl, subErr
@@ -59,6 +59,7 @@ func main() {
 	//gen new config
 	cfg := p.GenConfig()
 	cfg.DataPath = dataPath
+	cfg.CheckSame = true
 	cfg.WriteLazy = true
 	cfg.FixedBlockSize = true
 	cfg.ChunkBlockSize = define.DefaultChunkBlockSize
