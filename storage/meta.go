@@ -211,6 +211,7 @@ func (f *Meta) cbForAutoSaveMeta() error {
 func (f *Meta) cbForTickQuit() {
 	if f.wg != nil {
 		f.wg.Done()
+		log.Println("pond.meta.cbForTickQuit")
 	}
 }
 

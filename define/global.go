@@ -16,6 +16,7 @@ const (
 // default
 const (
 	DefaultPacketMaxSize = 2048 //2KB
+	DefaultQueueSize = 1024
 )
 
 // others

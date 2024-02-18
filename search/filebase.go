@@ -8,6 +8,7 @@ import (
 	"github.com/andyzhou/tinysearch"
 	tDefine "github.com/andyzhou/tinysearch/define"
 	tJson "github.com/andyzhou/tinysearch/json"
+	"log"
 	"sync"
 )
 
@@ -26,11 +27,14 @@ type FileBase struct {
 }
 
 //construct
-func NewFileBase(ts *tinysearch.Service, wg *sync.WaitGroup) *FileBase {
+func NewFileBase(
+	ts *tinysearch.Service,
+	wg *sync.WaitGroup,
+	queueSizes ...int) *FileBase {
 	this := &FileBase{
 		ts: ts,
 		wg: wg,
-		queue: queue.NewQueue(),
+		queue: queue.NewQueue(queueSizes...),
 	}
 	this.interInit()
 	return this
@@ -226,6 +230,9 @@ func (f *FileBase) DelOne(md5 string) error {
 	if f.ts == nil {
 		return errors.New("inter search engine not init")
 	}
+	if f.queue == nil || f.queue.QueueClosed() {
+		return errors.New("inter queue is nil or closed")
+	}
 
 	//save into queue
 	_, err := f.queue.SendData(md5)
@@ -241,6 +248,9 @@ func (f *FileBase) AddOne(obj *json.FileBaseJson) error {
 	}
 	if f.ts == nil {
 		return errors.New("inter search engine not init")
+	}
+	if f.queue == nil || f.queue.QueueClosed() {
+		return errors.New("inter queue is nil or closed")
 	}
 
 	//save into queue
@@ -294,6 +304,7 @@ func (f *FileBase) addOneBase(obj *json.FileBaseJson) error {
 func (f *FileBase) cbForQueueQuit() {
 	if f.wg != nil {
 		f.wg.Done()
+		log.Println("pond.search.fileBase.cbForTickQuit")
 	}
 }
 

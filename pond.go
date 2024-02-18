@@ -94,7 +94,11 @@ func (f *Pond) WriteData(
 	return f.storage.WriteData(data, shortUrls...)
 }
 
-//set config
+///////////////////////
+//api for config setup
+///////////////////////
+
+//set config, STEP-2
 func (f *Pond) SetConfig(cfg *conf.Config) error {
 	//check
 	if cfg == nil || cfg.DataPath == "" {
@@ -112,11 +116,12 @@ func (f *Pond) SetConfig(cfg *conf.Config) error {
 	return f.storage.SetConfig(cfg, &_wg)
 }
 
-//gen new config
+//gen new config, STEP-1
 func (f *Pond) GenConfig() *conf.Config {
 	return &conf.Config{
 		ChunkSizeMax: define.DefaultChunkMaxSize,
 		ChunkBlockSize: define.DefaultChunkBlockSize,
 		FileActiveHours: define.DefaultChunkActiveHours,
+		InterQueueSize: define.DefaultQueueSize,
 	}
 }

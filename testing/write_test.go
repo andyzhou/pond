@@ -16,9 +16,9 @@ import (
 //read data
 func writeData(p *pond.Pond) (string, error) {
 	//format data
-	data := fmt.Sprintf("hell-%v", time.Now().Unix())
+	now := time.Now().Unix()
+	data := fmt.Sprintf("hell-%v", now)
 	return p.WriteData([]byte(data))
-
 }
 
 //test write api
@@ -37,8 +37,15 @@ func TestWrite(t *testing.T) {
 
 //bench write api
 func BenchmarkWrite(b *testing.B) {
+	var (
+		err error
+	)
+	//set times
+	b.N = 2000
+
 	//reset timer
 	b.ResetTimer()
+	b.Logf("write bench mark start\n")
 
 	//init pond
 	p, err := InitPond()
@@ -47,9 +54,27 @@ func BenchmarkWrite(b *testing.B) {
 		return
 	}
 
+	//wait a moment for pond init
+	time.Sleep(time.Second)
+
 	//defer p.Quit()
+	failed := 0
+	succeed := 0
 	for n := 0; n < b.N; n++ {
-		shortUrl, subErr := writeData(p)
-		b.Logf("n:%v, write data, shortUrl:%v, err:%v\n", n, shortUrl, subErr)
+		_, err = writeData(p)
+		if err != nil {
+			failed++
+		}else{
+			succeed++
+		}
 	}
+
+	b.Logf("write bench mark finished, succeed:%v, failed:%v\n", succeed, failed)
+	if err != nil {
+		b.Error(err)
+	}
+
+	//quit
+	p.Quit()
+	b.Logf("write bench mark all done!\n")
 }

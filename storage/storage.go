@@ -236,7 +236,7 @@ func (f *Storage) SetConfig(
 	f.wg = wg
 
 	//search setup
-	err := search.GetSearch().SetCore(cfg.DataPath, wg)
+	err := search.GetSearch().SetCore(cfg.DataPath, wg, cfg.InterQueueSize)
 	if err != nil {
 		return err
 	}

@@ -10,4 +10,5 @@ type Config struct {
 	WriteLazy       bool   //switcher for lazy queue opt
 	CheckSame       bool   //switcher for check same data
 	FileActiveHours int32  //chunk file active hours
+	InterQueueSize  int	   //for inter data save queue size, default 1024
 }

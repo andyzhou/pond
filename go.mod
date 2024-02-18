@@ -3,7 +3,7 @@ module github.com/andyzhou/pond
 go 1.19
 
 require (
-	github.com/andyzhou/tinylib v0.0.0-20240205021657-d875e8056480
+	github.com/andyzhou/tinylib v0.0.0-20240218103727-ea0dbca2ac9b
 	github.com/andyzhou/tinysearch v0.0.0-20230915043404-0bca8937c1b4
 )
 

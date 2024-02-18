@@ -7,6 +7,7 @@ import (
 	"github.com/andyzhou/tinylib/queue"
 	"github.com/andyzhou/tinysearch"
 	tJson "github.com/andyzhou/tinysearch/json"
+	"log"
 	"sync"
 )
 
@@ -25,11 +26,14 @@ type FileInfo struct {
 }
 
 //construct
-func NewFileInfo(ts *tinysearch.Service, wg *sync.WaitGroup) *FileInfo {
+func NewFileInfo(
+	ts *tinysearch.Service,
+	wg *sync.WaitGroup,
+	queueSizes ...int) *FileInfo {
 	this := &FileInfo{
 		ts: ts,
 		wg: wg,
-		queue: queue.NewQueue(),
+		queue: queue.NewQueue(queueSizes...),
 	}
 	this.interInit()
 	return this
@@ -150,6 +154,9 @@ func (f *FileInfo) DelOne(shortUrl string) error {
 	if f.ts == nil {
 		return errors.New("inter search engine not init")
 	}
+	if f.queue == nil || f.queue.QueueClosed() {
+		return errors.New("inter queue is nil or closed")
+	}
 
 	//save into queue
 	_, err := f.queue.SendData(shortUrl)
@@ -166,9 +173,15 @@ func (f *FileInfo) AddOne(obj *json.FileInfoJson) error {
 	if f.ts == nil {
 		return errors.New("inter search engine not init")
 	}
+	if f.queue == nil || f.queue.QueueClosed() {
+		return errors.New("inter queue is nil or closed")
+	}
 
-	//save into search
-	err := f.addOneDoc(obj)
+	//send to queue
+	_, err := f.queue.SendData(obj)
+
+	////save into search
+	//err := f.addOneDoc(obj)
 	return err
 }
 
@@ -218,6 +231,7 @@ func (f *FileInfo) addOneDoc(obj *json.FileInfoJson) error {
 func (f *FileInfo) cbForQueueQuit() {
 	if f.wg != nil {
 		f.wg.Done()
+		log.Println("pond.search.fileInfo.cbForTickQuit")
 	}
 }
 

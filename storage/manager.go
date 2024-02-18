@@ -6,6 +6,7 @@ import (
 	"github.com/andyzhou/pond/conf"
 	"github.com/andyzhou/pond/define"
 	"github.com/andyzhou/tinylib/queue"
+	"log"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -202,6 +203,7 @@ func (f *Manager) checkUnActiveChunkFiles() error {
 func (f *Manager) cbForTickQuit() {
 	if f.wg != nil {
 		f.wg.Done()
+		log.Println("pond.manager.cbForTickQuit")
 	}
 }
 

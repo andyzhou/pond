@@ -27,6 +27,7 @@ var (
 //face info
 type Search struct {
 	rootPath string
+	queueSize int
 	initDone bool
 	info *FileInfo
 	base *FileBase
@@ -45,8 +46,7 @@ func GetSearch() *Search {
 
 //construct
 func NewSearch() *Search {
-	this := &Search{
-	}
+	this := &Search{}
 	return this
 }
 
@@ -69,7 +69,10 @@ func (f *Search) GetFileBase() *FileBase {
 }
 
 //set root path
-func (f *Search) SetCore(path string, wg *sync.WaitGroup) error {
+func (f *Search) SetCore(
+	path string,
+	wg *sync.WaitGroup,
+	queueSizes ...int) error {
 	//check
 	if path == "" {
 		return errors.New("invalid path parameter")
@@ -78,6 +81,14 @@ func (f *Search) SetCore(path string, wg *sync.WaitGroup) error {
 		return nil
 	}
 	f.wg = wg
+
+	//setup queue size
+	if queueSizes != nil && len(queueSizes) > 0 {
+		f.queueSize = queueSizes[0]
+	}
+	if f.queueSize <= 0 {
+		f.queueSize = define.DefaultQueueSize
+	}
 
 	//format search root path
 	f.rootPath = fmt.Sprintf("%v/%v", path, define.SubDirOfSearch)
@@ -104,6 +115,6 @@ func (f *Search) initIndex() {
 	f.ts.SetDataPath(f.rootPath)
 
 	//init file base and info
-	f.base = NewFileBase(f.ts, f.wg)
-	f.info = NewFileInfo(f.ts, f.wg)
+	f.base = NewFileBase(f.ts, f.wg, f.queueSize)
+	f.info = NewFileInfo(f.ts, f.wg, f.queueSize)
 }

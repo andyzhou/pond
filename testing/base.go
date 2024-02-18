@@ -27,6 +27,8 @@ func InitPond() (*pond.Pond, error) {
 	cfg := p.GenConfig()
 	cfg.DataPath = dataPath
 	cfg.FixedBlockSize = true
+	cfg.CheckSame = true
+	cfg.InterQueueSize = 2048
 
 	//set config
 	err = p.SetConfig(cfg)
