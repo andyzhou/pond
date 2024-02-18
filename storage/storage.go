@@ -166,15 +166,17 @@ func (f *Storage) ReadData(
 	//setup real offset and length
 	realOffset := fileInfo.Offset
 	realLength := fileInfo.Size
+	skipHeader := false
 	if assignedOffset >= 0 && assignedOffset <= (fileInfo.Offset + fileInfo.Size) {
 		realOffset = fileInfo.Offset + assignedOffset
+		skipHeader = true
 	}
 	if assignedLength > 0 && assignedLength <= fileInfo.Size {
 		realLength = assignedLength
 	}
 
 	//read chunk file data
-	fileData, subErrTwo := chunkObj.ReadFile(realOffset, realLength)
+	fileData, subErrTwo := chunkObj.ReadFile(realOffset, realLength, skipHeader)
 	return fileData, subErrTwo
 }
 
