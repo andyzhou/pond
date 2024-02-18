@@ -5,7 +5,7 @@ type (
 	//read req
 	ReadReq struct {
 		Offset int64
-		Size int64
+		End int64
 		SkipHeader bool
 	}
 	ReadResp struct {

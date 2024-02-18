@@ -118,10 +118,10 @@ func (f *Storage) DeleteData(
 //return fileData, error
 func (f *Storage) ReadData(
 		shortUrl string,
-		offsetAndLength ...int64,
+		offsetAndEnds ...int64,
 	) ([]byte, error) {
 	var (
-		assignedOffset, assignedLength int64
+		assignedOffset, assignedEnd int64
 	)
 	//check
 	if shortUrl == "" {
@@ -148,35 +148,35 @@ func (f *Storage) ReadData(
 	}
 
 	//detect assigned offset and length
-	if offsetAndLength != nil {
-		paraLen := len(offsetAndLength)
+	if offsetAndEnds != nil {
+		paraLen := len(offsetAndEnds)
 		switch paraLen {
 		case 1:
 			{
-				assignedOffset = offsetAndLength[0]
+				assignedOffset = offsetAndEnds[0]
 			}
 		case 2:
 			{
-				assignedOffset = offsetAndLength[0]
-				assignedLength = offsetAndLength[1]
+				assignedOffset = offsetAndEnds[0]
+				assignedEnd = offsetAndEnds[1]
 			}
 		}
 	}
 
 	//setup real offset and length
 	realOffset := fileInfo.Offset
-	realLength := fileInfo.Size
+	realEnd := fileInfo.Size
 	skipHeader := false
 	if assignedOffset >= 0 && assignedOffset <= (fileInfo.Offset + fileInfo.Size) {
 		realOffset = fileInfo.Offset + assignedOffset
 		skipHeader = true
 	}
-	if assignedLength > 0 && assignedLength <= fileInfo.Size {
-		realLength = assignedLength
+	if assignedEnd > 0 && assignedEnd <= fileInfo.Size {
+		realEnd = realOffset + assignedEnd
 	}
 
 	//read chunk file data
-	fileData, subErrTwo := chunkObj.ReadFile(realOffset, realLength, skipHeader)
+	fileData, subErrTwo := chunkObj.ReadFile(realOffset, realEnd, skipHeader)
 	return fileData, subErrTwo
 }
 

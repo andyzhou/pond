@@ -17,14 +17,14 @@ import (
 //if not read whole data, need skip header
 func (f *Chunk) ReadFile(
 			offset,
-			size int64,
+			end int64,
 			skipHeaders ...bool,
 		) ([]byte, error) {
 	var (
 		skipHeader bool
 	)
 	//check
-	if offset < 0 || size <= 0 {
+	if offset < 0 || end <= 0 {
 		return nil, errors.New("invalid parameter")
 	}
 	if skipHeaders != nil && len(skipHeaders) > 0 {
@@ -34,13 +34,13 @@ func (f *Chunk) ReadFile(
 	//check lazy mode
 	if !f.readLazy {
 		//direct read data
-		return f.directReadData(offset, size, skipHeaders...)
+		return f.directReadData(offset, end, skipHeaders...)
 	}
 
 	//init read request
 	req := ReadReq{
 		Offset: offset,
-		Size: size,
+		End: end,
 		SkipHeader: skipHeader,
 	}
 
@@ -78,11 +78,11 @@ func (f *Chunk) cbForReadOpt(
 
 	//get key data
 	offset := req.Offset
-	size := req.Size
+	end := req.End
 	skipHeader := req.SkipHeader
 
 	//direct read data
-	byteData, err := f.directReadData(offset, size, skipHeader)
+	byteData, err := f.directReadData(offset, end, skipHeader)
 	if err != nil {
 		return nil, err
 	}
@@ -97,14 +97,14 @@ func (f *Chunk) cbForReadOpt(
 //direct read file data
 //if not read whole data, need skip header
 func (f *Chunk) directReadData(
-	offset, size int64,
+	offset, end int64,
 	skipHeaders ...bool,
 	) ([]byte, error) {
 	var (
 		skipHeader bool
 	)
 	//check
-	if offset < 0 || size <= 0 {
+	if offset < 0 || end <= 0 {
 		return nil, errors.New("invalid parameter")
 	}
 	if skipHeaders != nil && len(skipHeaders) > 0 {
@@ -128,6 +128,7 @@ func (f *Chunk) directReadData(
 	headerLen := pack.GetHeadLen()
 
 	//create block buffer
+	size := end - offset
 	byteData := make([]byte, size)
 
 	//read real data and sync active time
