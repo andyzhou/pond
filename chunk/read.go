@@ -128,7 +128,6 @@ func (f *Chunk) directReadData(
 	headerLen := pack.GetHeadLen()
 
 	//create block buffer
-	header := make([]byte, headerLen)
 	byteData := make([]byte, size)
 
 	//read real data and sync active time
@@ -137,6 +136,7 @@ func (f *Chunk) directReadData(
 
 	if !skipHeader {
 		//read and unpack header
+		header := make([]byte, headerLen)
 		_, err := f.file.ReadAt(header, offset)
 		if err != nil {
 			return nil, err
