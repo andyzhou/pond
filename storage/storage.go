@@ -122,6 +122,7 @@ func (f *Storage) ReadData(
 	) ([]byte, error) {
 	var (
 		assignedOffset, assignedEnd int64
+		realEnd int64
 	)
 	//check
 	if shortUrl == "" {
@@ -165,14 +166,15 @@ func (f *Storage) ReadData(
 
 	//setup real offset and length
 	realOffset := fileInfo.Offset
-	realEnd := fileInfo.Size
 	skipHeader := false
-	if assignedOffset >= 0 && assignedOffset <= (fileInfo.Offset + fileInfo.Size) {
-		realOffset = fileInfo.Offset + assignedOffset
+	if assignedOffset >= 0 {
+		realOffset += assignedOffset
 		skipHeader = true
 	}
-	if assignedEnd > 0 && assignedEnd <= fileInfo.Size {
+	if assignedEnd > 0 {
 		realEnd = realOffset + assignedEnd
+	}else{
+		realEnd = realOffset + fileInfo.Size
 	}
 
 	//read chunk file data
