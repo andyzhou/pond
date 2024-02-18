@@ -172,7 +172,11 @@ func (f *Storage) ReadData(
 		skipHeader = true
 	}
 	if assignedEnd > 0 {
-		realEnd = realOffset + assignedEnd
+		if assignedEnd < fileInfo.Size {
+			realEnd = realOffset + assignedEnd
+		}else{
+			realEnd = fileInfo.Offset + fileInfo.Size
+		}
 	}else{
 		realEnd = realOffset + fileInfo.Size
 	}
