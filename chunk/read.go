@@ -79,9 +79,10 @@ func (f *Chunk) cbForReadOpt(
 	//get key data
 	offset := req.Offset
 	size := req.Size
+	skipHeader := req.SkipHeader
 
 	//direct read data
-	byteData, err := f.directReadData(offset, size)
+	byteData, err := f.directReadData(offset, size, skipHeader)
 	if err != nil {
 		return nil, err
 	}
