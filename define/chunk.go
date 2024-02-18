@@ -23,6 +23,7 @@ const (
 
 // default value
 const (
+	DefaultMinChunkFiles    = 3            //min chunk files
 	DefaultChunkBlockSize   = 128          //min block data size
 	DefaultChunkMaxSize     = DataSizeOfTB //one TB
 	DefaultChunkMultiIncr   = 0.1

@@ -113,6 +113,9 @@ func (f *Pond) SetConfig(cfg *conf.Config) error {
 	if cfg.FileActiveHours <= 0 {
 		cfg.FileActiveHours = define.DefaultChunkActiveHours
 	}
+	if cfg.MinChunkFiles <= 0 {
+		cfg.MinChunkFiles = define.DefaultMinChunkFiles
+	}
 	return f.storage.SetConfig(cfg, &_wg)
 }
 
@@ -123,5 +126,14 @@ func (f *Pond) GenConfig() *conf.Config {
 		ChunkBlockSize: define.DefaultChunkBlockSize,
 		FileActiveHours: define.DefaultChunkActiveHours,
 		InterQueueSize: define.DefaultQueueSize,
+	}
+}
+
+//gen redis config
+func (f *Pond) GenRedisConfig() *conf.RedisConfig {
+	return &conf.RedisConfig{
+		KeyPrefix: define.DefaultKeyPrefix,
+		FileInfoHashKeys: define.DefaultFileInfoHashKeys,
+		FileBaseHashKeys: define.DefaultFileBaseHashKeys,
 	}
 }

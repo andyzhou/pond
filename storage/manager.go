@@ -129,6 +129,26 @@ func (f *Manager) GetActiveChunk() (*chunk.Chunk, error) {
 	return target, nil
 }
 
+//init new chunk info
+//return newChunkId
+func (f *Manager) InitNewChunk() int64 {
+	//create new with locker
+	f.Lock()
+	defer f.Unlock()
+
+	//begin create new
+	chunkFileObj := f.meta.CreateNewChunk()
+	chunkId := chunkFileObj.Id
+
+	//init chunk face
+	target := chunk.NewChunk(chunkId, f.cfg)
+	target.SetChunkMaxSize(f.chunkMaxSize)
+
+	//storage into run map
+	f.chunkMap.Store(chunkId, target)
+	return chunkId
+}
+
 //set config
 func (f *Manager) SetConfig(cfg *conf.Config) error {
 	//check
@@ -157,9 +177,9 @@ func (f *Manager) SetConfig(cfg *conf.Config) error {
 
 	//load meta data obj into run env
 	metaObj := f.meta.GetMetaData()
-	if metaObj != nil {
+	chunks := int32(0)
+	if metaObj != nil && metaObj.ChunkId > 0 {
 		//loop init old chunk obj
-		chunks := int32(0)
 		for _, chunkId := range metaObj.Chunks {
 			//init chunk face
 			chunkObj := chunk.NewChunk(chunkId, f.cfg)
@@ -170,6 +190,24 @@ func (f *Manager) SetConfig(cfg *conf.Config) error {
 		}
 		//update chunk count
 		atomic.StoreInt32(&f.chunks, chunks)
+	}else{
+		//pre-create batch empty chunk files
+		for i := 1; i <= cfg.MinChunkFiles; i++ {
+			//create new chunk info
+			chunkId := f.InitNewChunk()
+
+			//init chunk face
+			chunkObj := chunk.NewChunk(chunkId, f.cfg)
+
+			//storage into run map
+			f.chunkMap.Store(chunkId, chunkObj)
+			chunks++
+		}
+		//update chunk count
+		atomic.StoreInt32(&f.chunks, chunks)
+
+		//force save meta data
+		f.meta.SaveMeta(true)
 	}
 	return err
 }
@@ -207,12 +245,18 @@ func (f *Manager) cbForTickQuit() {
 	}
 }
 
-//inter init
-func (f *Manager) interInit() {
+//inter chunk files check ticker
+func (f *Manager) startChunkFilesChecker() {
 	//init ticker
 	f.ticker = queue.NewTicker(define.ManagerTickerSeconds * time.Second)
 	f.ticker.SetQuitCallback(f.cbForTickQuit)
 	f.ticker.SetCheckerCallback(f.checkUnActiveChunkFiles)
+}
+
+//inter init
+func (f *Manager) interInit() {
+	//start chunk files checker
+	f.startChunkFilesChecker()
 
 	//wait group add count
 	if f.wg != nil {
