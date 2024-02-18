@@ -14,25 +14,34 @@ import (
  */
 
 //read file
+//if not read whole data, need skip header
 func (f *Chunk) ReadFile(
 			offset,
 			size int64,
+			skipHeaders ...bool,
 		) ([]byte, error) {
+	var (
+		skipHeader bool
+	)
 	//check
 	if offset < 0 || size <= 0 {
 		return nil, errors.New("invalid parameter")
+	}
+	if skipHeaders != nil && len(skipHeaders) > 0 {
+		skipHeader = skipHeaders[0]
 	}
 
 	//check lazy mode
 	if !f.readLazy {
 		//direct read data
-		return f.directReadData(offset, size)
+		return f.directReadData(offset, size, skipHeaders...)
 	}
 
 	//init read request
 	req := ReadReq{
 		Offset: offset,
 		Size: size,
+		SkipHeader: skipHeader,
 	}
 
 	//send request
@@ -85,11 +94,20 @@ func (f *Chunk) cbForReadOpt(
 }
 
 //direct read file data
+//if not read whole data, need skip header
 func (f *Chunk) directReadData(
-	offset, size int64) ([]byte, error) {
+	offset, size int64,
+	skipHeaders ...bool,
+	) ([]byte, error) {
+	var (
+		skipHeader bool
+	)
 	//check
 	if offset < 0 || size <= 0 {
 		return nil, errors.New("invalid parameter")
+	}
+	if skipHeaders != nil && len(skipHeaders) > 0 {
+		skipHeader = skipHeaders[0]
 	}
 
 	//check and open file
@@ -116,21 +134,23 @@ func (f *Chunk) directReadData(
 	f.fileLocker.Lock()
 	defer f.fileLocker.Unlock()
 
-	//read and unpack header
-	_, err := f.file.ReadAt(header, offset)
-	if err != nil {
-		return nil, err
-	}
-	msg, subErr := pack.UnPack(header)
-	if subErr != nil {
-		return nil, err
-	}
-	if size > msg.GetLen() {
-		return nil, errors.New("request size exceed data size")
+	if !skipHeader {
+		//read and unpack header
+		_, err := f.file.ReadAt(header, offset)
+		if err != nil {
+			return nil, err
+		}
+		msg, subErr := pack.UnPack(header)
+		if subErr != nil {
+			return nil, err
+		}
+		if size > msg.GetLen() {
+			return nil, errors.New("request size exceed data size")
+		}
 	}
 
 	//read real data
-	_, err = f.file.ReadAt(byteData, offset + headerLen)
+	_, err := f.file.ReadAt(byteData, offset + headerLen)
 	f.lastActiveTime = time.Now().Unix()
 	return byteData, err
 }

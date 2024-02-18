@@ -6,6 +6,7 @@ type (
 	ReadReq struct {
 		Offset int64
 		Size int64
+		SkipHeader bool
 	}
 	ReadResp struct {
 		Data []byte
