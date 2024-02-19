@@ -29,6 +29,7 @@ type (
 type Chunk struct {
 	removedFiles removedBaseFileSort
 	useRedis bool
+	Base
 	sync.RWMutex
 }
 
@@ -42,6 +43,9 @@ func NewChunk() *Chunk {
 
 //remove file base info
 func (f *Chunk) RemoveRemovedFileBase(md5 string) error {
+	var (
+		err error
+	)
 	//check
 	if md5 == "" {
 		return errors.New("invalid parameter")
@@ -59,6 +63,9 @@ func (f *Chunk) RemoveRemovedFileBase(md5 string) error {
 	if removeIdx >= 0 {
 		//remove relate element
 		f.removedFiles = append(f.removedFiles[0:removeIdx], f.removedFiles[removeIdx:]...)
+
+		//remove from storage
+		err = f.delFileBase(md5)
 	}
 
 	//check and reset slice
@@ -66,7 +73,7 @@ func (f *Chunk) RemoveRemovedFileBase(md5 string) error {
 		newFileSlice := make([]*removedBaseFile, 0)
 		f.removedFiles = newFileSlice
 	}
-	return nil
+	return err
 }
 
 ////update removed file base info
@@ -221,24 +228,7 @@ func (f *Chunk) SetUseRedis(useRedis bool) {
 
 ////////////////
 //private func
-////////////////
-
-func (f *Chunk) getFileBase(md5 string) (*json.FileBaseJson, error) {
-	var (
-		fileBaseObj *json.FileBaseJson
-		err error
-	)
-	if f.useRedis {
-		//get from redis
-		fileData := data.GetRedisData().GetFile()
-		fileBaseObj, err = fileData.GetBase(md5)
-	}else{
-		//get from search
-		fileBaseSearch := search.GetSearch().GetFileBase()
-		fileBaseObj, err = fileBaseSearch.GetOne(md5)
-	}
-	return fileBaseObj, err
-}
+////////////////\
 
 //add new removed base file info
 func (f *Chunk) addNewRemovedFile(obj *json.FileBaseJson) error {
