@@ -22,4 +22,5 @@ const (
 // others
 const (
 	ManagerTickerSeconds = 60 //xx seconds
+	AsciiCharSize = 2
 )

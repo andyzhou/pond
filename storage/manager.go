@@ -249,8 +249,8 @@ func (f *Manager) cbForTickQuit() {
 func (f *Manager) startChunkFilesChecker() {
 	//init ticker
 	f.ticker = queue.NewTicker(define.ManagerTickerSeconds * time.Second)
-	f.ticker.SetQuitCallback(f.cbForTickQuit)
 	f.ticker.SetCheckerCallback(f.checkUnActiveChunkFiles)
+	f.ticker.SetQuitCallback(f.cbForTickQuit)
 }
 
 //inter init

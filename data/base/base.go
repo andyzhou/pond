@@ -3,6 +3,8 @@ package base
 import (
 	"context"
 	"errors"
+	"github.com/andyzhou/pond/conf"
+	"github.com/andyzhou/pond/define"
 	"time"
 
 	"github.com/andyzhou/tinylib/redis"
@@ -72,6 +74,15 @@ func (f *Base) CheckInitClient(cfg *redis.Config) (*redis.Connection, error) {
 	return conn, err
 }
 
-func (f *Base) GenRedisConf() *redis.Config {
-	return &redis.Config{}
+//gen redis config
+func (f *Base) GenRedisConf(cfg *conf.RedisConfig) *redis.Config {
+	redisCfg := &redis.Config{
+		DBTag: cfg.DBTag,
+		Addr: cfg.Address,
+		Password: cfg.Password,
+		DBNum: cfg.DBNum,
+		TimeOut: time.Duration(define.DefaultConnTimeOut) * time.Second,
+		PoolSize: cfg.Pools,
+	}
+	return redisCfg
 }

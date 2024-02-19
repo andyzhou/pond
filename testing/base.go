@@ -3,18 +3,41 @@ package testing
 import (
 	"fmt"
 	"github.com/andyzhou/pond"
+	"log"
 	"os"
+	"sync"
 )
 
 const (
+	RedisAddr = "127.0.0.1:6379"
 	DataDir = "../private"
-	ShortUrl = "dkU9Ud" //"dMVRt8"
+	ShortUrl = "t44wts"
 )
 
+var (
+	p *pond.Pond
+	_once sync.Once
+)
+
+//get single instance
+func GetPond() *pond.Pond {
+	var (
+		err error
+	)
+	_once.Do(func() {
+		p, err = initPond()
+		if err != nil {
+			panic(any(err))
+		}
+	})
+	return p
+}
+
 //init pond
-func InitPond() (*pond.Pond, error) {
+func initPond() (*pond.Pond, error) {
 	//init face
-	p := pond.NewPond()
+	log.Printf("init pond...\n")
+	pObj := pond.NewPond()
 
 	//get current path
 	curPath, err := os.Getwd()
@@ -24,17 +47,28 @@ func InitPond() (*pond.Pond, error) {
 	dataPath := fmt.Sprintf("%v/%v", curPath, DataDir)
 
 	//set config
-	cfg := p.GenConfig()
+	cfg := pObj.GenConfig()
 	cfg.DataPath = dataPath
 	cfg.FixedBlockSize = true
 	cfg.CheckSame = true
-	cfg.InterQueueSize = 2048
+
+	//set redis config
+	redisCfg := p.GenRedisConfig()
+	redisCfg.DBTag = "gen"
+	redisCfg.Address = RedisAddr
+	redisCfg.Pools = 5
 
 	//set config
-	err = p.SetConfig(cfg)
+	err = pObj.SetConfig(cfg)
 	if err != nil {
 		return nil, err
 	}
 
-	return p, err
+	//set redis config
+	err = pObj.SetRedisConfig(redisCfg)
+	if err != nil {
+		return nil, err
+	}
+
+	return pObj, err
 }

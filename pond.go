@@ -119,13 +119,17 @@ func (f *Pond) SetConfig(cfg *conf.Config) error {
 	return f.storage.SetConfig(cfg, &_wg)
 }
 
+//set redis config, optional
+func (f *Pond) SetRedisConfig(cfg *conf.RedisConfig) error {
+	return f.storage.SetRedisConfig(cfg)
+}
+
 //gen new config, STEP-1
 func (f *Pond) GenConfig() *conf.Config {
 	return &conf.Config{
 		ChunkSizeMax: define.DefaultChunkMaxSize,
 		ChunkBlockSize: define.DefaultChunkBlockSize,
 		FileActiveHours: define.DefaultChunkActiveHours,
-		InterQueueSize: define.DefaultQueueSize,
 	}
 }
 

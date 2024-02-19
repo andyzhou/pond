@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/andyzhou/pond/chunk"
 	"github.com/andyzhou/pond/conf"
+	"github.com/andyzhou/pond/data"
 	"github.com/andyzhou/pond/define"
 	"github.com/andyzhou/pond/json"
 	"github.com/andyzhou/pond/search"
@@ -27,7 +28,9 @@ import (
 type Storage struct {
 	wg *sync.WaitGroup //reference
 	cfg *conf.Config //reference
+	redisCfg *conf.RedisConfig //reference
 	manager *Manager
+	useRedis bool
 	initDone bool
 	searchLocker sync.RWMutex
 	utils.Utils
@@ -73,18 +76,14 @@ func (f *Storage) DeleteData(
 		return errors.New("config didn't setup")
 	}
 
-	//get relate search
-	fileInfoSearch := search.GetSearch().GetFileInfo()
-	fileBaseSearch := search.GetSearch().GetFileBase()
-
 	//get file info
-	fileInfo, _ := fileInfoSearch.GetOne(shortUrl)
+	fileInfo, _ := f.getFileInfo(shortUrl)
 	if fileInfo == nil {
 		return errors.New("can't get file info by short url")
 	}
 
 	//get file base
-	fileBase, _ := fileBaseSearch.GetOne(fileInfo.Md5)
+	fileBase, _ := f.getFileBase(fileInfo.Md5)
 	if fileBase == nil {
 		return errors.New("can't get file base info")
 	}
@@ -98,13 +97,13 @@ func (f *Storage) DeleteData(
 	}
 
 	//update file base info
-	err := fileBaseSearch.AddOne(fileBase)
+	err := f.saveFileBase(fileBase)
 	if err != nil {
 		return err
 	}
 
 	//del file info
-	err = fileInfoSearch.DelOne(shortUrl)
+	err = f.delFileInfo(shortUrl)
 
 	//add removed info into run env
 	if fileBase.Removed && err == nil {
@@ -133,8 +132,7 @@ func (f *Storage) ReadData(
 	}
 
 	//get file info
-	fileInfoSearch := search.GetSearch().GetFileInfo()
-	fileInfo, err := fileInfoSearch.GetOne(shortUrl)
+	fileInfo, err := f.getFileInfo(shortUrl)
 	if err != nil {
 		return nil, err
 	}
@@ -248,6 +246,17 @@ func (f *Storage) SetConfig(
 	return nil
 }
 
+//set redis config
+func (f *Storage) SetRedisConfig(cfg *conf.RedisConfig) error {
+	if cfg == nil {
+		return errors.New("invalid parameter")
+	}
+	f.redisCfg = cfg
+	f.useRedis = true
+	data.GetRedisData().SetRedisConf(cfg)
+	return nil
+}
+
 ///////////////
 //private func
 ///////////////
@@ -334,10 +343,6 @@ func (f *Storage) writeNewData(data []byte) (string, error) {
 		return shortUrl, errors.New("invalid parameter")
 	}
 
-	//get relate search
-	fileInfoSearch := search.GetSearch().GetFileInfo()
-	fileBaseSearch := search.GetSearch().GetFileBase()
-
 	//gen and check base file by md5
 	if f.cfg.CheckSame {
 		//check same data, use data as md5 base value
@@ -359,7 +364,7 @@ func (f *Storage) writeNewData(data []byte) (string, error) {
 	needWriteChunkData := true
 	if f.cfg.CheckSame {
 		//need check same, check file base info
-		fileBaseObj, _ = fileBaseSearch.GetOne(fileMd5)
+		fileBaseObj, _ = f.getFileBase(fileMd5)
 		if fileBaseObj != nil {
 			if !fileBaseObj.Removed {
 				//inc appoint value of file base info
@@ -430,10 +435,8 @@ func (f *Storage) writeNewData(data []byte) (string, error) {
 		return shortUrl, err
 	}
 
-	//save into search with locker
-	f.searchLocker.Lock()
-	defer f.searchLocker.Unlock()
-	err = fileBaseSearch.AddOne(fileBaseObj)
+	//save file base
+	err = f.saveFileBase(fileBaseObj)
 	if err != nil {
 		return shortUrl, err
 	}
@@ -454,7 +457,94 @@ func (f *Storage) writeNewData(data []byte) (string, error) {
 	fileInfoObj.Blocks = fileBaseObj.Blocks
 	fileInfoObj.CreateAt = time.Now().Unix()
 
-	//save into search
-	err = fileInfoSearch.AddOne(fileInfoObj)
+	//save file info
+	err = f.saveFileInfo(fileInfoObj)
 	return shortUrl, err
+}
+
+////////////////////////////
+//api for file base and info
+////////////////////////////
+
+//del file info
+func (f *Storage) delFileInfo(shortUrl string) error {
+	var (
+		err error
+	)
+	if f.useRedis {
+		//save into redis
+		fileData := data.GetRedisData().GetFile()
+		err = fileData.DelInfo(shortUrl)
+	}else{
+		//save into search
+		fileInfoSearch := search.GetSearch().GetFileInfo()
+		err = fileInfoSearch.DelOne(shortUrl)
+	}
+	return err
+}
+
+//get file base and info
+func (f *Storage) getFileInfo(shortUrl string) (*json.FileInfoJson, error) {
+	var (
+		fileInfoObj *json.FileInfoJson
+		err error
+	)
+	if f.useRedis {
+		//get from redis
+		fileData := data.GetRedisData().GetFile()
+		fileInfoObj, err = fileData.GetInfo(shortUrl)
+	}else{
+		//get from search
+		fileInfoSearch := search.GetSearch().GetFileInfo()
+		fileInfoObj, err = fileInfoSearch.GetOne(shortUrl)
+	}
+	return fileInfoObj, err
+}
+func (f *Storage) getFileBase(md5 string) (*json.FileBaseJson, error) {
+	var (
+		fileBaseObj *json.FileBaseJson
+		err error
+	)
+	if f.useRedis {
+		//get from redis
+		fileData := data.GetRedisData().GetFile()
+		fileBaseObj, err = fileData.GetBase(md5)
+	}else{
+		//get from search
+		fileBaseSearch := search.GetSearch().GetFileBase()
+		fileBaseObj, err = fileBaseSearch.GetOne(md5)
+	}
+	return fileBaseObj, err
+}
+
+//save file base and info
+func (f *Storage) saveFileInfo(obj *json.FileInfoJson) error {
+	var (
+		err error
+	)
+	if f.useRedis {
+		//save into redis
+		fileData := data.GetRedisData().GetFile()
+		err = fileData.AddInfo(obj)
+	}else{
+		//save into search
+		fileInfoSearch := search.GetSearch().GetFileInfo()
+		err = fileInfoSearch.AddOne(obj)
+	}
+	return err
+}
+func (f *Storage) saveFileBase(obj *json.FileBaseJson) error {
+	var (
+		err error
+	)
+	if f.useRedis {
+		//save into redis
+		fileData := data.GetRedisData().GetFile()
+		err = fileData.AddBase(obj)
+	}else{
+		//save into search
+		fileBaseSearch := search.GetSearch().GetFileBase()
+		err = fileBaseSearch.AddOne(obj)
+	}
+	return err
 }

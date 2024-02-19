@@ -1,6 +1,7 @@
 package testing
 
 import (
+	"errors"
 	"fmt"
 	"github.com/andyzhou/pond"
 	"testing"
@@ -13,8 +14,16 @@ import (
  * @mail <diudiu8848@163.com>
  */
 
+//init
+func init() {
+	p = GetPond()
+}
+
 //read data
 func writeData(p *pond.Pond) (string, error) {
+	if p == nil {
+		return "", errors.New("pond client not init")
+	}
 	//format data
 	now := time.Now().Unix()
 	data := fmt.Sprintf("hell-%v", now)
@@ -23,13 +32,6 @@ func writeData(p *pond.Pond) (string, error) {
 
 //test write api
 func TestWrite(t *testing.T) {
-	//init pond
-	p, err := InitPond()
-	if err != nil {
-		t.Log(err.Error())
-		return
-	}
-
 	//write data
 	shortUrl, subErr := writeData(p)
 	t.Logf("write data, shortUrl:%v, err:%v\n", shortUrl, subErr)
@@ -41,23 +43,11 @@ func BenchmarkWrite(b *testing.B) {
 		err error
 	)
 	//set times
-	b.N = 2000
+	//b.N = 1000
 
 	//reset timer
 	b.ResetTimer()
-	b.Logf("write bench mark start\n")
 
-	//init pond
-	p, err := InitPond()
-	if err != nil {
-		b.Log(err.Error())
-		return
-	}
-
-	//wait a moment for pond init
-	time.Sleep(time.Second)
-
-	//defer p.Quit()
 	failed := 0
 	succeed := 0
 	for n := 0; n < b.N; n++ {
@@ -75,6 +65,6 @@ func BenchmarkWrite(b *testing.B) {
 	}
 
 	//quit
-	p.Quit()
+	//p.Quit()
 	b.Logf("write bench mark all done!\n")
 }

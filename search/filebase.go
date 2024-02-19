@@ -24,6 +24,7 @@ type FileBase struct {
 	ts *tinysearch.Service //reference
 	wg *sync.WaitGroup //reference
 	queue *queue.Queue
+	queueSize int
 }
 
 //construct
@@ -31,10 +32,18 @@ func NewFileBase(
 	ts *tinysearch.Service,
 	wg *sync.WaitGroup,
 	queueSizes ...int) *FileBase {
+	var (
+		queueSize int
+	)
+	if queueSizes != nil && len(queueSizes) > 0 {
+		queueSize = queueSizes[0]
+	}
+
+	//self init
 	this := &FileBase{
 		ts: ts,
 		wg: wg,
-		queue: queue.NewQueue(queueSizes...),
+		queueSize: queueSize,
 	}
 	this.interInit()
 	return this
@@ -42,7 +51,13 @@ func NewFileBase(
 
 //quit
 func (f *FileBase) Quit() {
-	f.queue.Quit()
+	if f.queue != nil {
+		f.queue.Quit()
+	}
+	if f.wg != nil {
+		f.wg.Done()
+		log.Println("pond.search.fileBase.cbForTickQuit")
+	}
 }
 
 //get batch filter by removed and sort by blocks
@@ -223,6 +238,9 @@ func (f *FileBase) GetOne(md5Val string) (*json.FileBaseJson, error) {
 //del one base file info
 //async opt
 func (f *FileBase) DelOne(md5 string) error {
+	var (
+		err error
+	)
 	//check
 	if md5 == "" {
 		return errors.New("invalid parameter")
@@ -230,18 +248,25 @@ func (f *FileBase) DelOne(md5 string) error {
 	if f.ts == nil {
 		return errors.New("inter search engine not init")
 	}
-	if f.queue == nil || f.queue.QueueClosed() {
-		return errors.New("inter queue is nil or closed")
+	if f.queueSize > 0 {
+		if f.queue == nil {
+			return errors.New("inter queue is nil or closed")
+		}
+		//run in queue
+		_, err = f.queue.SendData(md5)
+	}else{
+		//direct call
+		err = f.delOneBase(md5)
 	}
-
-	//save into queue
-	_, err := f.queue.SendData(md5)
 	return err
 }
 
 //add one base file info
 //async opt
 func (f *FileBase) AddOne(obj *json.FileBaseJson) error {
+	var (
+		err error
+	)
 	//check
 	if obj == nil || obj.Md5 == "" {
 		return errors.New("invalid parameter")
@@ -249,12 +274,16 @@ func (f *FileBase) AddOne(obj *json.FileBaseJson) error {
 	if f.ts == nil {
 		return errors.New("inter search engine not init")
 	}
-	if f.queue == nil || f.queue.QueueClosed() {
-		return errors.New("inter queue is nil or closed")
+	if f.queueSize > 0 {
+		if f.queue == nil {
+			return errors.New("inter queue is nil or closed")
+		}
+		//run in queue
+		_, err = f.queue.SendData(obj)
+	}else{
+		//direct run
+		err = f.addOneBase(obj)
 	}
-
-	//save into queue
-	_, err := f.queue.SendData(obj)
 	return err
 }
 
@@ -298,14 +327,6 @@ func (f *FileBase) addOneBase(obj *json.FileBaseJson) error {
 	//add doc
 	err := doc.AddDoc(index, obj.Md5, obj)
 	return err
-}
-
-//cb for queue quit opt
-func (f *FileBase) cbForQueueQuit() {
-	if f.wg != nil {
-		f.wg.Done()
-		log.Println("pond.search.fileBase.cbForTickQuit")
-	}
 }
 
 //cb for queue opt
@@ -358,8 +379,16 @@ func (f *FileBase) interInit() {
 	//init index
 	f.initIndex()
 
-	//set cb for queue opt
-	f.queue.SetCallback(f.cbForQueueOpt)
-	f.queue.SetQuitCallback(f.cbForQueueQuit)
-	f.wg.Add(1)
+	//check and init queue
+	if f.queueSize > 0 {
+		//init new queue
+		f.queue = queue.NewQueue(f.queueSize)
+
+		//set cb for queue opt
+		f.queue.SetCallback(f.cbForQueueOpt)
+	}
+
+	if f.wg != nil {
+		f.wg.Add(1)
+	}
 }

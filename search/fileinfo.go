@@ -23,6 +23,7 @@ type FileInfo struct {
 	ts *tinysearch.Service //reference
 	wg *sync.WaitGroup //reference
 	queue *queue.Queue //inter write or delete queue
+	queueSize int
 }
 
 //construct
@@ -30,10 +31,18 @@ func NewFileInfo(
 	ts *tinysearch.Service,
 	wg *sync.WaitGroup,
 	queueSizes ...int) *FileInfo {
+	var (
+		queueSize int
+	)
+	if queueSizes != nil && len(queueSizes) > 0 {
+		queueSize = queueSizes[0]
+	}
+
+	//self init
 	this := &FileInfo{
 		ts: ts,
 		wg: wg,
-		queue: queue.NewQueue(queueSizes...),
+		queueSize: queueSize,
 	}
 	this.interInit()
 	return this
@@ -41,7 +50,13 @@ func NewFileInfo(
 
 //quit
 func (f *FileInfo) Quit() {
-	f.queue.Quit()
+	if f.queue != nil {
+		f.queue.Quit()
+	}
+	if f.wg != nil {
+		f.wg.Done()
+		log.Println("pond.search.fileInfo.cbForTickQuit")
+	}
 }
 
 //get batch by create at desc
@@ -147,6 +162,9 @@ func (f *FileInfo) GetOne(shortUrl string) (*json.FileInfoJson, error) {
 //del one file info
 //async opt
 func (f *FileInfo) DelOne(shortUrl string) error {
+	var (
+		err error
+	)
 	//check
 	if shortUrl == "" {
 		return errors.New("invalid parameter")
@@ -154,18 +172,25 @@ func (f *FileInfo) DelOne(shortUrl string) error {
 	if f.ts == nil {
 		return errors.New("inter search engine not init")
 	}
-	if f.queue == nil || f.queue.QueueClosed() {
-		return errors.New("inter queue is nil or closed")
+	if f.queueSize > 0 {
+		if f.queue == nil {
+			return errors.New("inter queue is nil or closed")
+		}
+		//run in queue
+		_, err = f.queue.SendData(shortUrl)
+	}else{
+		//direct run
+		err = f.delOneDoc(shortUrl)
 	}
-
-	//save into queue
-	_, err := f.queue.SendData(shortUrl)
 	return err
 }
 
 //add one file info
 //async opt
 func (f *FileInfo) AddOne(obj *json.FileInfoJson) error {
+	var (
+		err error
+	)
 	//check
 	if obj == nil || obj.ShortUrl == "" {
 		return errors.New("invalid parameter")
@@ -173,15 +198,16 @@ func (f *FileInfo) AddOne(obj *json.FileInfoJson) error {
 	if f.ts == nil {
 		return errors.New("inter search engine not init")
 	}
-	if f.queue == nil || f.queue.QueueClosed() {
-		return errors.New("inter queue is nil or closed")
+	if f.queueSize > 0 {
+		if f.queue == nil {
+			return errors.New("inter queue is nil or closed")
+		}
+		//run in queue
+		_, err = f.queue.SendData(obj)
+	}else{
+		//direct run
+		err = f.addOneDoc(obj)
 	}
-
-	//send to queue
-	_, err := f.queue.SendData(obj)
-
-	////save into search
-	//err := f.addOneDoc(obj)
 	return err
 }
 
@@ -225,14 +251,6 @@ func (f *FileInfo) addOneDoc(obj *json.FileInfoJson) error {
 	//add doc
 	err := doc.AddDoc(index, obj.ShortUrl, obj)
 	return err
-}
-
-//cb for queue quit
-func (f *FileInfo) cbForQueueQuit() {
-	if f.wg != nil {
-		f.wg.Done()
-		log.Println("pond.search.fileInfo.cbForTickQuit")
-	}
 }
 
 //cb for queue opt
@@ -285,8 +303,15 @@ func (f *FileInfo) interInit() {
 	//init index
 	f.initIndex()
 
-	//set cb for queue
-	f.queue.SetCallback(f.cbForQueueOpt)
-	f.queue.SetQuitCallback(f.cbForQueueQuit)
-	f.wg.Add(1)
+	//check and init queue
+	if f.queueSize > 0 {
+		//init new queue
+		f.queue = queue.NewQueue(f.queueSize)
+		//set cb for queue
+		f.queue.SetCallback(f.cbForQueueOpt)
+	}
+
+	if f.wg != nil {
+		f.wg.Add(1)
+	}
 }

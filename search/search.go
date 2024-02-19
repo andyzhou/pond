@@ -83,11 +83,9 @@ func (f *Search) SetCore(
 	f.wg = wg
 
 	//setup queue size
+	//if not set size, queue will be closed
 	if queueSizes != nil && len(queueSizes) > 0 {
 		f.queueSize = queueSizes[0]
-	}
-	if f.queueSize <= 0 {
-		f.queueSize = define.DefaultQueueSize
 	}
 
 	//format search root path

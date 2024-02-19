@@ -18,9 +18,11 @@ type Config struct {
 //used for file meta info storage
 type RedisConfig struct {
 	//basic
+	DBTag 	  string
 	Address   string
 	Password  string
 	DBNum     int
+	Pools     int
 
 	//optional
 	KeyPrefix string

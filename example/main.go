@@ -15,6 +15,7 @@ import (
  */
 
 const (
+	RedisAddr = "127.0.0.1:6379"
 	DataDir = "./private"
 	ShortUrl = "ko8IJ5"
 )
@@ -72,8 +73,20 @@ func main() {
 	cfg.FixedBlockSize = true
 	cfg.ChunkBlockSize = define.DefaultChunkBlockSize
 
+	//gen new redis config
+	redisCfg := p.GenRedisConfig()
+	redisCfg.DBTag = "gen"
+	redisCfg.Address = RedisAddr
+
 	//set config
 	err = p.SetConfig(cfg)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
+	//set redis config
+	err = p.SetRedisConfig(redisCfg)
 	if err != nil {
 		log.Println(err)
 		return
@@ -83,13 +96,14 @@ func main() {
 	//getFileInfos(p)
 
 	//write data
-	//shortUrl, _ := writeData(p)
+	shortUrl, _ := writeData(p)
+	log.Printf("write data, short url:%v\n", shortUrl)
 
 	//read data
 	//readData(p, shortUrl)
 
 	//del data
-	delData(p, ShortUrl)
+	//delData(p, ShortUrl)
 
 	//quit
 	p.Quit()
