@@ -27,3 +27,7 @@ go test -bench=.
 go test -bench=Read -benchmem -benchtime=20s
 
 ```
+
+# Future
+- file base and info storage in redis for performance
+- add download file data support

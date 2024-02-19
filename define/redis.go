@@ -7,3 +7,13 @@ const (
 	DefaultFileInfoHashKeys = 9
 	DefaultFileBaseHashKeys = 5
 )
+
+// key pattern
+const (
+	RedisKeyHashPattern  = "hash:%v"     //*:{kind}
+)
+
+//others
+const (
+	RedisKeyPrefix = "pond_"
+)
