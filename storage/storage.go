@@ -238,23 +238,24 @@ func (f *Storage) SetConfig(
 	}
 	f.wg = wg
 
-	//search setup
-	err := search.GetSearch().SetCore(cfg.DataPath, wg, cfg.InterQueueSize)
-	if err != nil {
-		return err
-	}
-
 	//init redis data
 	if redisCfg != nil && len(redisCfg) > 0 {
 		oneRedisCfg = redisCfg[0]
 		f.setRedisConfig(oneRedisCfg)
+		f.SetBaseUseRedis(true)
+	}else{
+		//search setup
+		err := search.GetSearch().SetCore(cfg.DataPath, wg, cfg.InterQueueSize)
+		if err != nil {
+			return err
+		}
 	}
 
 	//manager setup
 	f.cfg = cfg
-	err = f.manager.SetConfig(cfg, f.useRedis)
+	err := f.manager.SetConfig(cfg, f.useRedis)
 	f.initDone = true
-	return nil
+	return err
 }
 
 ///////////////

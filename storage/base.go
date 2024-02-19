@@ -14,6 +14,11 @@ type Base struct {
 	useRedis bool
 }
 
+//set use redis
+func (f *Base) SetBaseUseRedis(useRedis bool) {
+	f.useRedis = useRedis
+}
+
 ////////////////////////////
 //api for file base and info
 ////////////////////////////

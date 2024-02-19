@@ -28,7 +28,6 @@ type (
 //face info
 type Chunk struct {
 	removedFiles removedBaseFileSort
-	useRedis bool
 	Base
 	sync.RWMutex
 }
@@ -224,6 +223,7 @@ func (f *Chunk) Load() {
 
 func (f *Chunk) SetUseRedis(useRedis bool) {
 	f.useRedis = useRedis
+	f.SetBaseUseRedis(useRedis)
 }
 
 ////////////////

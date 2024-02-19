@@ -11,7 +11,7 @@ import (
 const (
 	RedisAddr = "127.0.0.1:6379"
 	DataDir = "../private"
-	ShortUrl = "t44wts"
+	ShortUrl = "dQRBx9"
 )
 
 var (

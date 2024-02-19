@@ -17,7 +17,7 @@ import (
 const (
 	RedisAddr = "127.0.0.1:6379"
 	DataDir = "./private"
-	ShortUrl = "ko8IJ5"
+	ShortUrl = "4Al0Yt"
 )
 
 //del data
@@ -77,6 +77,7 @@ func main() {
 	redisCfg := p.GenRedisConfig()
 	redisCfg.GroupTag = "gen"
 	redisCfg.Address = RedisAddr
+	redisCfg.Pools = 3
 
 	//set config
 	err = p.SetConfig(cfg, redisCfg)
@@ -93,7 +94,7 @@ func main() {
 	log.Printf("write data, short url:%v\n", shortUrl)
 
 	//read data
-	//readData(p, shortUrl)
+	readData(p, shortUrl)
 
 	//del data
 	//delData(p, ShortUrl)

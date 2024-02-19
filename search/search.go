@@ -52,8 +52,12 @@ func NewSearch() *Search {
 
 //quit
 func (f *Search) Quit() {
-	f.info.Quit()
-	f.base.Quit()
+	if f.info != nil {
+		f.info.Quit()
+	}
+	if f.base != nil {
+		f.base.Quit()
+	}
 	if f.ts != nil {
 		f.ts.Quit()
 	}
