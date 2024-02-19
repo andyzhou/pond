@@ -8,6 +8,7 @@ import (
 	"github.com/andyzhou/pond/define"
 	"github.com/andyzhou/pond/json"
 	"github.com/andyzhou/tinylib/util"
+	genRedis "github.com/go-redis/redis/v8"
 )
 
 /*
@@ -20,6 +21,7 @@ import (
 type FileData struct {
 	cfg *conf.RedisConfig
 	hash *base.HashData
+	sorted *base.SortedData
 	initDone bool
 	base.Base
 	util.Util
@@ -30,6 +32,47 @@ func NewFileData() *FileData {
 	this := &FileData{
 	}
 	return this
+}
+
+///////////////////
+//api for removed
+///////////////////
+
+//load batch removed file base
+func (f *FileData) LoadRemovedFileBase(
+		page, pageSize int,
+		isByDesc ...bool,
+	) ([]genRedis.Z, error){
+	if page <= 0 {
+		page = define.DefaultPage
+	}
+	start := (page - 1) * pageSize
+	end := start + pageSize
+	zSlice, err := f.sorted.GetBatchMembers(f.getRemovedFileBaseKey(), start, end, isByDesc...)
+	return zSlice, err
+}
+
+//remove removed file base
+func (f *FileData) RemoveRemovedFileBase(md5 string) error {
+	//check
+	if md5 == "" {
+		return errors.New("invalid parameter")
+	}
+	//remove member
+	err := f.sorted.RemoveMember(f.getRemovedFileBaseKey(), md5)
+	return err
+}
+
+//add removed file base
+func (f *FileData) AddRemovedFileBase(md5 string, blocks int64) error {
+	//check
+	if md5 == "" || blocks <= 0 {
+		return errors.New("invalid parameter")
+	}
+	//add member
+	member := f.sorted.GenMember(md5, float64(blocks))
+	err := f.sorted.AddMembers(f.getRemovedFileBaseKey(), member)
+	return err
 }
 
 ///////////////
@@ -185,13 +228,19 @@ func (f *FileData) SetRedisConf(cfg *conf.RedisConfig) {
 	//gen redis conf
 	redisConf := f.GenRedisConf(f.cfg)
 
-	//init base hash data
+	//init base data
 	f.hash = base.NewHashData(redisConf)
+	f.sorted = base.NewSortedData(redisConf)
 }
 
 //////////////////
 //private func
 //////////////////
+
+//get removed file base key tag
+func (f *FileData) getRemovedFileBaseKey() string {
+	return define.RedisKeyRemovedFileBase
+}
 
 //get file info key tag
 func (f *FileData) getFileInfoKey(shortUrl string) (string, error) {

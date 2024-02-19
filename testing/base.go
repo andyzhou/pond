@@ -54,18 +54,12 @@ func initPond() (*pond.Pond, error) {
 
 	//set redis config
 	redisCfg := p.GenRedisConfig()
-	redisCfg.DBTag = "gen"
+	redisCfg.GroupTag = "gen"
 	redisCfg.Address = RedisAddr
 	redisCfg.Pools = 5
 
 	//set config
-	err = pObj.SetConfig(cfg)
-	if err != nil {
-		return nil, err
-	}
-
-	//set redis config
-	err = pObj.SetRedisConfig(redisCfg)
+	err = pObj.SetConfig(cfg, redisCfg)
 	if err != nil {
 		return nil, err
 	}

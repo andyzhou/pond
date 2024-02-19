@@ -226,7 +226,11 @@ func (f *Storage) WriteData(
 //set config
 func (f *Storage) SetConfig(
 	cfg *conf.Config,
-	wg *sync.WaitGroup) error {
+	wg *sync.WaitGroup,
+	redisCfg ...*conf.RedisConfig) error {
+	var (
+		oneRedisCfg *conf.RedisConfig
+	)
 	//check
 	if cfg == nil || cfg.DataPath == "" || wg == nil {
 		return errors.New("invalid parameter")
@@ -239,15 +243,25 @@ func (f *Storage) SetConfig(
 		return err
 	}
 
+	//init redis data
+	if redisCfg != nil && len(redisCfg) > 0 {
+		oneRedisCfg = redisCfg[0]
+		f.setRedisConfig(oneRedisCfg)
+	}
+
 	//manager setup
 	f.cfg = cfg
-	err = f.manager.SetConfig(cfg)
+	err = f.manager.SetConfig(cfg, f.useRedis)
 	f.initDone = true
 	return nil
 }
 
+///////////////
+//private func
+///////////////
+
 //set redis config
-func (f *Storage) SetRedisConfig(cfg *conf.RedisConfig) error {
+func (f *Storage) setRedisConfig(cfg *conf.RedisConfig) error {
 	if cfg == nil {
 		return errors.New("invalid parameter")
 	}
@@ -256,10 +270,6 @@ func (f *Storage) SetRedisConfig(cfg *conf.RedisConfig) error {
 	data.GetRedisData().SetRedisConf(cfg)
 	return nil
 }
-
-///////////////
-//private func
-///////////////
 
 //overwrite old data
 //fix chunk size config should be true

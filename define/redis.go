@@ -11,13 +11,15 @@ const (
 
 //general key
 const (
-	RedisKeyHashPattern = "pond:%v:hash"
+	RedisKeySortedPattern = "pond:%v:%v:sorted" //*:{group}:{tag}:sorted
+	RedisKeyHashPattern = "pond:%v:%v:hash" //*:{group}:{tag}:hash
 )
 
 // key pattern
 const (
 	RedisKeyFileInfoPattern  = "fileInfo:%v"     //*:{hashIdx}
 	RedisKeyFileBasePattern  = "fileBase:%v"     //*:{hashIdx}
+	RedisKeyRemovedFileBase  = "removedBase"
 )
 
 //redis key and num info

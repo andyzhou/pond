@@ -77,7 +77,7 @@ func (f *Base) CheckInitClient(cfg *redis.Config) (*redis.Connection, error) {
 //gen redis config
 func (f *Base) GenRedisConf(cfg *conf.RedisConfig) *redis.Config {
 	redisCfg := &redis.Config{
-		DBTag: cfg.DBTag,
+		DBTag: cfg.GroupTag,
 		Addr: cfg.Address,
 		Password: cfg.Password,
 		DBNum: cfg.DBNum,

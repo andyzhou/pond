@@ -75,18 +75,11 @@ func main() {
 
 	//gen new redis config
 	redisCfg := p.GenRedisConfig()
-	redisCfg.DBTag = "gen"
+	redisCfg.GroupTag = "gen"
 	redisCfg.Address = RedisAddr
 
 	//set config
-	err = p.SetConfig(cfg)
-	if err != nil {
-		log.Println(err)
-		return
-	}
-
-	//set redis config
-	err = p.SetRedisConfig(redisCfg)
+	err = p.SetConfig(cfg, redisCfg)
 	if err != nil {
 		log.Println(err)
 		return

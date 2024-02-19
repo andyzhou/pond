@@ -254,7 +254,7 @@ func (d *HashData) getKeyConnect(
 
 //get set key
 func (d *HashData) getKey(tag string) string {
-	return fmt.Sprintf(define.RedisKeyHashPattern, tag)
+	return fmt.Sprintf(define.RedisKeyHashPattern, d.cfg.DBTag, tag)
 }
 
 //inter init

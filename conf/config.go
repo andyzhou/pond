@@ -18,7 +18,7 @@ type Config struct {
 //used for file meta info storage
 type RedisConfig struct {
 	//basic
-	DBTag 	  string
+	GroupTag  string	//used for group keys
 	Address   string
 	Password  string
 	DBNum     int

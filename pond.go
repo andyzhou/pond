@@ -99,7 +99,7 @@ func (f *Pond) WriteData(
 ///////////////////////
 
 //set config, STEP-2
-func (f *Pond) SetConfig(cfg *conf.Config) error {
+func (f *Pond) SetConfig(cfg *conf.Config, redisCfg ...*conf.RedisConfig) error {
 	//check
 	if cfg == nil || cfg.DataPath == "" {
 		return errors.New("invalid parameter")
@@ -116,12 +116,7 @@ func (f *Pond) SetConfig(cfg *conf.Config) error {
 	if cfg.MinChunkFiles <= 0 {
 		cfg.MinChunkFiles = define.DefaultMinChunkFiles
 	}
-	return f.storage.SetConfig(cfg, &_wg)
-}
-
-//set redis config, optional
-func (f *Pond) SetRedisConfig(cfg *conf.RedisConfig) error {
-	return f.storage.SetRedisConfig(cfg)
+	return f.storage.SetConfig(cfg, &_wg, redisCfg...)
 }
 
 //gen new config, STEP-1

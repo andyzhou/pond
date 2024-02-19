@@ -29,6 +29,7 @@ type Manager struct {
 	chunkMap sync.Map //chunkId -> *Chunk, active chunk file map
 	chunkMaxSize int64
 	chunks int32 //atomic count
+	useRedis bool
 	initDone bool
 	lazyMode bool
 	sync.RWMutex
@@ -150,7 +151,13 @@ func (f *Manager) InitNewChunk() int64 {
 }
 
 //set config
-func (f *Manager) SetConfig(cfg *conf.Config) error {
+func (f *Manager) SetConfig(
+		cfg *conf.Config,
+		userRedis ...bool,
+	) error {
+	var (
+		needUserRedis bool
+	)
 	//check
 	if cfg == nil || cfg.DataPath == "" {
 		return errors.New("invalid parameter")
@@ -158,8 +165,15 @@ func (f *Manager) SetConfig(cfg *conf.Config) error {
 	if f.initDone {
 		return nil
 	}
+	if userRedis != nil && len(userRedis) > 0 {
+		needUserRedis = userRedis[0]
+	}
+
+	//sync env
 	f.cfg = cfg
 	f.chunkMaxSize = cfg.ChunkSizeMax
+	f.useRedis = needUserRedis
+	f.chunk.SetUseRedis(needUserRedis)
 
 	//init meta
 	err := f.meta.SetConfig(cfg)

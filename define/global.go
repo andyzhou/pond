@@ -21,6 +21,7 @@ const (
 
 // others
 const (
+	RecPerPage = 10
 	ManagerTickerSeconds = 60 //xx seconds
 	AsciiCharSize = 2
 )
