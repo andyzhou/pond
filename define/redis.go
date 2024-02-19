@@ -2,7 +2,7 @@ package define
 
 //default
 const (
-	DefaultPort = 6379
+	DefaultRedisGroup = "gen"
 	DefaultKeyPrefix = "pond_"
 	DefaultConnTimeOut = 10 //xx seconds
 	DefaultFileInfoHashKeys = 9

@@ -241,6 +241,11 @@ func (f *Storage) SetConfig(
 	//init redis data
 	if redisCfg != nil && len(redisCfg) > 0 {
 		oneRedisCfg = redisCfg[0]
+		if oneRedisCfg != nil {
+			if oneRedisCfg.GroupTag == "" {
+				oneRedisCfg.GroupTag = define.DefaultRedisGroup
+			}
+		}
 		f.setRedisConfig(oneRedisCfg)
 		f.SetBaseUseRedis(true)
 	}else{
