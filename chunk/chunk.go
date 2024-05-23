@@ -165,6 +165,6 @@ func (f *Chunk) interInit() {
 	f.writeQueue.SetCallback(f.cbForWriteOpt)
 
 	//init meta ticker
-	f.metaTicker = queue.NewTicker(define.DefaultChunkMetaTicker * time.Second)
+	f.metaTicker = queue.NewTicker(define.DefaultChunkMetaTicker)
 	f.metaTicker.SetCheckerCallback(f.cbForUpdateMeta)
 }

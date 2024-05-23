@@ -9,7 +9,6 @@ import (
 	"log"
 	"sync"
 	"sync/atomic"
-	"time"
 )
 
 /*
@@ -262,7 +261,7 @@ func (f *Manager) cbForTickQuit() {
 //inter chunk files check ticker
 func (f *Manager) startChunkFilesChecker() {
 	//init ticker
-	f.ticker = queue.NewTicker(define.ManagerTickerSeconds * time.Second)
+	f.ticker = queue.NewTicker(define.ManagerTickerSeconds)
 	f.ticker.SetCheckerCallback(f.checkUnActiveChunkFiles)
 	f.ticker.SetQuitCallback(f.cbForTickQuit)
 }
