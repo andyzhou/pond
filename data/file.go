@@ -9,6 +9,7 @@ import (
 	"github.com/andyzhou/pond/json"
 	"github.com/andyzhou/tinylib/util"
 	genRedis "github.com/go-redis/redis/v8"
+	"time"
 )
 
 /*
@@ -48,7 +49,11 @@ func (f *FileData) LoadRemovedFileBase(
 	}
 	start := (page - 1) * pageSize
 	end := start + pageSize
-	zSlice, err := f.sorted.GetBatchMembers(f.getRemovedFileBaseKey(), start, end, isByDesc...)
+	zSlice, err := f.sorted.GetBatchMembers(
+						f.getRemovedFileBaseKey(),
+						start,
+						end,
+						isByDesc...)
 	return zSlice, err
 }
 
@@ -79,6 +84,42 @@ func (f *FileData) AddRemovedFileBase(md5 string, blocks int64) error {
 //api for info
 ///////////////
 
+//get file info list
+func (f *FileData) GetInfoList(page, pageSize int) ([]*json.FileInfoJson, error) {
+	//setup start, end value
+	if page <= 0 {
+		page = 1
+	}
+	if pageSize <= 0 {
+		pageSize = define.DefaultPageSize
+	}
+	start := (page - 1) *pageSize
+	end := start + pageSize
+
+	//get from sort list
+	listKeyTag := f.getFileListKey()
+	zSlice, err := f.sorted.GetBatchMembers(listKeyTag, start, end, true)
+	if err != nil || zSlice == nil || len(zSlice) <= 0 {
+		return nil, err
+	}
+
+	//format result
+	result := make([]*json.FileInfoJson, 0)
+	for _, z := range zSlice {
+		shortUrl, _ := z.Member.(string)
+		if shortUrl == "" {
+			continue
+		}
+		//get one file info
+		fileInfo, _ := f.GetInfo(shortUrl)
+		if fileInfo == nil || fileInfo.ShortUrl != shortUrl {
+			continue
+		}
+		result = append(result, fileInfo)
+	}
+	return result, nil
+}
+
 //del file info
 func (f *FileData) DelInfo(shortUrl string) error {
 	//check
@@ -95,6 +136,13 @@ func (f *FileData) DelInfo(shortUrl string) error {
 	//del from redis
 	field := shortUrl
 	err = f.hash.DelFields(keyTag, field)
+	if err != nil {
+		return err
+	}
+
+	//remove from file list
+	listKeyTag := f.getFileListKey()
+	err = f.sorted.RemoveMember(listKeyTag, shortUrl)
 	return err
 }
 
@@ -143,6 +191,18 @@ func (f *FileData) AddInfo(obj *json.FileInfoJson) error {
 	//save into redis
 	field := obj.ShortUrl
 	err = f.hash.SetOneValue(keyTag, field, jsonStr)
+	if err != nil {
+		return err
+	}
+
+	//add new file short url into sorted set
+	//short url as member, time as score
+	listKeyTag := f.getFileListKey()
+	member := &genRedis.Z{
+		Member: obj.ShortUrl,
+		Score: float64(time.Now().Nanosecond()),
+	}
+	err = f.sorted.AddMembers(listKeyTag, member)
 	return err
 }
 
@@ -240,6 +300,11 @@ func (f *FileData) SetRedisConf(cfg *conf.RedisConfig) {
 //get removed file base key tag
 func (f *FileData) getRemovedFileBaseKey() string {
 	return define.RedisKeyRemovedFileBase
+}
+
+//get file short url list key tag
+func (f *FileData) getFileListKey() string {
+	return define.RedisKeyFilesList
 }
 
 //get file info key tag

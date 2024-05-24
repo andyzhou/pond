@@ -26,6 +26,7 @@ var (
 //face info
 type Pond struct {
 	storage *storage.Storage
+	initDone bool
 }
 
 //get single instance
@@ -61,8 +62,12 @@ func (f *Pond) Wait() {
 //get batch file info by create time
 //return total, []*FileInfoJson, error
 func (f *Pond) GetFiles(
-			page, pageSize int,
-		) (int64, []*json.FileInfoJson, error) {
+		page, pageSize int,
+	) (int64, []*json.FileInfoJson, error) {
+	//check
+	if !f.initDone {
+		return 0, nil, errors.New("inter config not init")
+	}
 	return f.storage.GetFilesInfo(page, pageSize)
 }
 
@@ -72,15 +77,23 @@ func (f *Pond) GetFiles(
 
 //del data
 func (f *Pond) DelData(shortUrl string) error {
+	//check
+	if !f.initDone {
+		return errors.New("inter config not init")
+	}
 	return f.storage.DeleteData(shortUrl)
 }
 
 //read data
 //extend para: offset, length
 func (f *Pond) ReadData(
-			shortUrl string,
-			offsetAndLength ...int64,
-		) ([]byte, error) {
+		shortUrl string,
+		offsetAndLength ...int64,
+	) ([]byte, error) {
+	//check
+	if !f.initDone {
+		return nil, errors.New("inter config not init")
+	}
 	return f.storage.ReadData(shortUrl, offsetAndLength...)
 }
 
@@ -88,9 +101,13 @@ func (f *Pond) ReadData(
 //if overwrite data, fix chunk size config should be true
 //return shortUrl, error
 func (f *Pond) WriteData(
-			data []byte,
-			shortUrls ...string,
-		) (string, error) {
+		data []byte,
+		shortUrls ...string,
+	) (string, error) {
+	//check
+	if !f.initDone {
+		return "", errors.New("inter config not init")
+	}
 	return f.storage.WriteData(data, shortUrls...)
 }
 
@@ -99,11 +116,15 @@ func (f *Pond) WriteData(
 ///////////////////////
 
 //set config, STEP-2
-func (f *Pond) SetConfig(cfg *conf.Config, redisCfg ...*conf.RedisConfig) error {
+func (f *Pond) SetConfig(
+	cfg *conf.Config,
+	redisCfg ...*conf.RedisConfig) error {
 	//check
 	if cfg == nil || cfg.DataPath == "" {
 		return errors.New("invalid parameter")
 	}
+
+	//setup base config
 	if cfg.ChunkSizeMax < define.DefaultChunkMaxSize {
 		cfg.ChunkSizeMax = define.DefaultChunkMaxSize
 	}
@@ -116,7 +137,15 @@ func (f *Pond) SetConfig(cfg *conf.Config, redisCfg ...*conf.RedisConfig) error 
 	if cfg.MinChunkFiles <= 0 {
 		cfg.MinChunkFiles = define.DefaultMinChunkFiles
 	}
-	return f.storage.SetConfig(cfg, &_wg, redisCfg...)
+
+	//call inter func
+	err := f.storage.SetConfig(cfg, &_wg, redisCfg...)
+	if err != nil {
+		return err
+	}
+
+	f.initDone = true
+	return nil
 }
 
 //gen new config, STEP-1

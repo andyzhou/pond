@@ -19,6 +19,7 @@ const (
 const (
 	RedisKeyFileInfoPattern  = "fileInfo:%v"     //*:{hashIdx}
 	RedisKeyFileBasePattern  = "fileBase:%v"     //*:{hashIdx}
+	RedisKeyFilesList		 = "filesList"		 //sorted data, shortUrl -> createTime
 	RedisKeyRemovedFileBase  = "removedBase"
 )
 

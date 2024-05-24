@@ -60,9 +60,15 @@ func (f *Storage) GetFilesInfo(
 	if !f.initDone {
 		return 0, nil, errors.New("config didn't setup")
 	}
-	//search file info
-	fileInfoSearch := search.GetSearch().GetFileInfo()
-	return fileInfoSearch.GetBathByTime(page, pageSize)
+	if f.useRedis {
+		//get from redis
+		filesInfo, err := data.GetRedisData().GetFile().GetInfoList(page, pageSize)
+		return 0, filesInfo, err
+	}else{
+		//get from search file info
+		fileInfoSearch := search.GetSearch().GetFileInfo()
+		return fileInfoSearch.GetBathByTime(page, pageSize)
+	}
 }
 
 //delete data
@@ -190,9 +196,9 @@ func (f *Storage) ReadData(
 //if overwrite data, fix chunk size config should be true
 //return shortUrl, error
 func (f *Storage) WriteData(
-			data []byte,
-			shortUrls ...string,
-		) (string, error) {
+		data []byte,
+		shortUrls ...string,
+	) (string, error) {
 	var (
 		shortUrl string
 		err error
