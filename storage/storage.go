@@ -48,7 +48,9 @@ func NewStorage(wg *sync.WaitGroup) *Storage {
 //quit
 func (f *Storage) Quit() {
 	f.manager.Quit()
-	search.GetSearch().Quit()
+	if !f.useRedis {
+		search.GetSearch().Quit()
+	}
 }
 
 //get file info list from search
@@ -286,46 +288,61 @@ func (f *Storage) setRedisConfig(cfg *conf.RedisConfig) error {
 
 //overwrite old data
 //fix chunk size config should be true
-func (f *Storage) overwriteData(shortUrl string, data[]byte) error {
+func (f *Storage) overwriteData(shortUrl string, fileData[]byte) error {
+	var (
+		fileInfoObj *json.FileInfoJson
+		fileBaseObj *json.FileBaseJson
+		err error
+	)
 	//check
-	if shortUrl == "" || data == nil {
+	if shortUrl == "" || fileData == nil {
 		return errors.New("invalid parameter")
 	}
 
-	//get relate search
-	fileInfoSearch := search.GetSearch().GetFileInfo()
-	fileBaseSearch := search.GetSearch().GetFileBase()
-
-	//get file info
-	fileInfoObj, _ := fileInfoSearch.GetOne(shortUrl)
-	if fileInfoObj == nil {
-		return errors.New("no file info for this short url")
+	//get file and base info
+	if f.useRedis {
+		//use redis data
+		fileInfoData := data.GetRedisData().GetFile()
+		fileInfoObj, err = fileInfoData.GetInfo(shortUrl)
+		if err != nil || fileInfoObj == nil {
+			return errors.New("no file info for this short url")
+		}
+		fileBaseObj, err = fileInfoData.GetBase(fileInfoObj.Md5)
+		if err != nil || fileBaseObj == nil {
+			return errors.New("no file base info for this short url")
+		}
+	}else{
+		//use search data
+		fileInfoSearch := search.GetSearch().GetFileInfo()
+		fileBaseSearch := search.GetSearch().GetFileBase()
+		fileInfoObj, err = fileInfoSearch.GetOne(shortUrl)
+		if err != nil || fileInfoObj == nil {
+			return errors.New("no file info for this short url")
+		}
+		fileBaseObj, err = fileBaseSearch.GetOne(fileInfoObj.Md5)
+		if err != nil || fileBaseObj == nil {
+			return errors.New("can't get file base info")
+		}
 	}
 
-	dataLen := int64(len(data))
+	dataLen := int64(len(fileData))
 	fileMd5 := fileInfoObj.Md5
 	offset := fileInfoObj.Offset
 	if fileInfoObj.Blocks < dataLen {
 		return errors.New("new file data size exceed old data")
 	}
 
-	//get file base info
-	fileBaseObj, _ := fileBaseSearch.GetOne(fileMd5)
-	if fileBaseObj == nil {
-		return errors.New("can't get file base info")
-	}
-
 	//get assigned chunk
-	activeChunk, err := f.manager.GetChunkById(fileInfoObj.ChunkFileId)
-	if err != nil {
-		return err
+	activeChunk, subErr := f.manager.GetChunkById(fileInfoObj.ChunkFileId)
+	if subErr != nil {
+		return subErr
 	}
 	if activeChunk == nil {
 		return errors.New("can't get active chunk")
 	}
 
 	//overwrite chunk data
-	resp := activeChunk.WriteFile(fileMd5, data, offset)
+	resp := activeChunk.WriteFile(fileMd5, fileData, offset)
 	if resp == nil {
 		return errors.New("can't get chunk write file response")
 	}
@@ -339,12 +356,25 @@ func (f *Storage) overwriteData(shortUrl string, data[]byte) error {
 
 	fileBaseObj.Size = dataLen
 	fileBaseObj.Blocks = resp.BlockSize
-	fileBaseSearch.AddOne(fileBaseObj)
+
 
 	//update file info
 	fileInfoObj.Size = dataLen
 	fileInfoObj.Offset = resp.NewOffSet
-	err = fileInfoSearch.AddOne(fileInfoObj)
+
+	//save info and base data
+	if f.useRedis {
+		//save into redis
+		fileInfoData := data.GetRedisData().GetFile()
+		err = fileInfoData.AddBase(fileBaseObj)
+		err = fileInfoData.AddInfo(fileInfoObj)
+	}else{
+		//save into search
+		fileInfoSearch := search.GetSearch().GetFileInfo()
+		fileBaseSearch := search.GetSearch().GetFileBase()
+		err = fileBaseSearch.AddOne(fileBaseObj)
+		err = fileInfoSearch.AddOne(fileInfoObj)
+	}
 	return err
 }
 
