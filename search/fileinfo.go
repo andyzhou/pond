@@ -7,7 +7,6 @@ import (
 	"github.com/andyzhou/tinylib/queue"
 	"github.com/andyzhou/tinysearch"
 	tJson "github.com/andyzhou/tinysearch/json"
-	"log"
 	"sync"
 )
 
@@ -55,15 +54,13 @@ func (f *FileInfo) Quit() {
 	}
 	if f.wg != nil {
 		f.wg.Done()
-		log.Println("pond.search.fileInfo.cbForTickQuit")
 	}
 }
 
 //get batch by create at desc
 func (f *FileInfo) GetBathByTime(
-			page,
-			pageSize int,
-		) (int64, []*json.FileInfoJson, error) {
+		page, pageSize int,
+	) (int64, []*json.FileInfoJson, error) {
 	//setup sorts
 	sorts := make([]*tJson.SortField, 0)
 	sortByTime := &tJson.SortField{
@@ -79,11 +76,10 @@ func (f *FileInfo) GetBathByTime(
 //get batch info
 //sync opt
 func (f *FileInfo) QueryBatch(
-			filters []*tJson.FilterField,
-			sorts []*tJson.SortField,
-			page,
-			pageSize int,
-		) (int64, []*json.FileInfoJson, error) {
+		filters []*tJson.FilterField,
+		sorts []*tJson.SortField,
+		page, pageSize int,
+	) (int64, []*json.FileInfoJson, error) {
 	//check
 	if page <= 0 {
 		page = define.DefaultPage
@@ -131,7 +127,8 @@ func (f *FileInfo) QueryBatch(
 
 //get one file info
 //sync opt
-func (f *FileInfo) GetOne(shortUrl string) (*json.FileInfoJson, error) {
+func (f *FileInfo) GetOne(
+	shortUrl string) (*json.FileInfoJson, error) {
 	//check
 	if shortUrl == "" {
 		return nil, errors.New("invalid parameter")
