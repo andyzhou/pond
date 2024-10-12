@@ -150,10 +150,7 @@ func (f *Manager) InitNewChunk() int64 {
 }
 
 //set config
-func (f *Manager) SetConfig(
-		cfg *conf.Config,
-		userRedis ...bool,
-	) error {
+func (f *Manager) SetConfig(cfg *conf.Config, userRedis ...bool) error {
 	var (
 		needUserRedis bool
 	)

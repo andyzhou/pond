@@ -53,9 +53,9 @@ func init()  {
 
 //construct
 func NewChunk(
-			chunkFileId int64,
-			cfg *conf.Config,
-		) *Chunk {
+		chunkFileId int64,
+		cfg *conf.Config,
+	) *Chunk {
 	//format chunk file
 	chunkDataFile := fmt.Sprintf(define.ChunkDataFilePara, chunkFileId)
 	chunkMetaFile := fmt.Sprintf(define.ChunkMetaFilePara, chunkFileId)

@@ -18,10 +18,10 @@ import (
 //write file
 //return ChunkWriteResp, error
 func (f *Chunk) WriteFile(
-			md5 string,
-			data []byte,
-			offsets ...int64,
-		) *WriteResp {
+		md5 string,
+		data []byte,
+		offsets ...int64,
+	) *WriteResp {
 	var (
 		offset int64 = -1
 		resp   WriteResp
@@ -172,7 +172,7 @@ func (f *Chunk) directWriteData(
 		f.chunkObj.Files++
 		f.chunkObj.Size += byteDataLen
 		//update meta file
-		f.updateMetaFile(true)
+		err = f.updateMetaFile(true)
 	}
 
 	//format resp

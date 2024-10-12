@@ -133,8 +133,7 @@ func (f *Chunk) RemoveRemovedFileBase(md5 string) error {
 
 //get available removed file base info
 func (f *Chunk) GetAvailableRemovedFileBase(
-			dataSize int64,
-		) (*json.FileBaseJson, error) {
+	dataSize int64) (*json.FileBaseJson, error) {
 	var (
 		matchedMd5 string
 	)
@@ -180,8 +179,7 @@ func (f *Chunk) GetAvailableRemovedFileBase(
 
 //add new removed file base info
 func (f *Chunk) AddRemovedBaseInfo(
-			obj *json.FileBaseJson,
-		) error {
+	obj *json.FileBaseJson) error {
 	//check
 	if obj == nil {
 		return errors.New("invalid parameter")

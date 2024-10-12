@@ -16,10 +16,10 @@ import (
 //read file
 //if not read whole data, need skip header
 func (f *Chunk) ReadFile(
-			offset,
-			end int64,
-			skipHeaders ...bool,
-		) ([]byte, error) {
+		offset,
+		end int64,
+		skipHeaders ...bool,
+	) ([]byte, error) {
 	var (
 		skipHeader bool
 	)
@@ -97,8 +97,8 @@ func (f *Chunk) cbForReadOpt(
 //direct read file data
 //if not read whole data, need skip header
 func (f *Chunk) directReadData(
-	offset, end int64,
-	skipHeaders ...bool,
+		offset, end int64,
+		skipHeaders ...bool,
 	) ([]byte, error) {
 	var (
 		skipHeader bool
