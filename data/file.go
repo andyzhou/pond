@@ -291,6 +291,9 @@ func (f *FileData) SetRedisConf(cfg *conf.RedisConfig) {
 	//init base data
 	f.hash = base.NewHashData(redisConf)
 	f.sorted = base.NewSortedData(redisConf)
+
+	//inter data init done
+	f.initDone = true
 }
 
 //////////////////

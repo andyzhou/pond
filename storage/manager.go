@@ -4,6 +4,7 @@ import (
 	"errors"
 	"github.com/andyzhou/pond/chunk"
 	"github.com/andyzhou/pond/conf"
+	"github.com/andyzhou/pond/data"
 	"github.com/andyzhou/pond/define"
 	"github.com/andyzhou/tinylib/queue"
 	"log"
@@ -22,6 +23,7 @@ import (
 type Manager struct {
 	wg *sync.WaitGroup //reference
 	cfg *conf.Config //reference
+	data *data.InterRedisData //reference
 	chunk *Chunk
 	meta *Meta
 	ticker *queue.Ticker
@@ -220,6 +222,12 @@ func (f *Manager) SetConfig(cfg *conf.Config, userRedis ...bool) error {
 		f.meta.SaveMeta(true)
 	}
 	return err
+}
+
+//set data obj
+func (f *Manager) SetData(data *data.InterRedisData) {
+	f.data = data
+	f.chunk.SetData(data)
 }
 
 ////////////////

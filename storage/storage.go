@@ -30,6 +30,7 @@ type Storage struct {
 	cfg *conf.Config //reference
 	redisCfg *conf.RedisConfig //reference
 	manager *Manager
+	data *data.InterRedisData
 	useRedis bool
 	initDone bool
 	searchLocker sync.RWMutex
@@ -41,6 +42,7 @@ type Storage struct {
 func NewStorage(wg *sync.WaitGroup) *Storage {
 	this := &Storage{
 		manager: NewManager(wg),
+		data: data.NewInterRedisData(),
 	}
 	return this
 }
@@ -64,7 +66,7 @@ func (f *Storage) GetFilesInfo(
 	}
 	if f.useRedis {
 		//get from redis
-		filesInfo, err := data.GetRedisData().GetFile().GetInfoList(page, pageSize)
+		filesInfo, err := f.data.GetFile().GetInfoList(page, pageSize)
 		return 0, filesInfo, err
 	}else{
 		//get from search file info
@@ -256,6 +258,8 @@ func (f *Storage) SetConfig(
 		}
 		f.setRedisConfig(oneRedisCfg)
 		f.SetBaseUseRedis(true)
+		f.SetBaseData(f.data)
+		f.manager.SetData(f.data)
 	}else{
 		//search setup
 		err := search.GetSearch().SetCore(cfg.DataPath, wg, cfg.InterQueueSize)
@@ -282,7 +286,7 @@ func (f *Storage) setRedisConfig(cfg *conf.RedisConfig) error {
 	}
 	f.redisCfg = cfg
 	f.useRedis = true
-	data.GetRedisData().SetRedisConf(cfg)
+	f.data.SetRedisConf(cfg)
 	return nil
 }
 
@@ -302,7 +306,7 @@ func (f *Storage) overwriteData(shortUrl string, fileData[]byte) error {
 	//get file and base info
 	if f.useRedis {
 		//use redis data
-		fileInfoData := data.GetRedisData().GetFile()
+		fileInfoData := f.data.GetFile()
 		fileInfoObj, err = fileInfoData.GetInfo(shortUrl)
 		if err != nil || fileInfoObj == nil {
 			return errors.New("no file info for this short url")
@@ -365,7 +369,7 @@ func (f *Storage) overwriteData(shortUrl string, fileData[]byte) error {
 	//save info and base data
 	if f.useRedis {
 		//save into redis
-		fileInfoData := data.GetRedisData().GetFile()
+		fileInfoData := f.data.GetFile()
 		err = fileInfoData.AddBase(fileBaseObj)
 		err = fileInfoData.AddInfo(fileInfoObj)
 	}else{

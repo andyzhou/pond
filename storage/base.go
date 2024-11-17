@@ -11,12 +11,18 @@ import (
  */
 
 type Base struct {
+	data *data.InterRedisData //reference obj
 	useRedis bool
 }
 
 //set use redis
 func (f *Base) SetBaseUseRedis(useRedis bool) {
 	f.useRedis = useRedis
+}
+
+//set data obj
+func (f *Base) SetBaseData(data *data.InterRedisData) {
+	f.data = data
 }
 
 ////////////////////////////
@@ -30,7 +36,7 @@ func (f *Base) delFileInfo(shortUrl string) error {
 	)
 	if f.useRedis {
 		//save into redis
-		fileData := data.GetRedisData().GetFile()
+		fileData := f.data.GetFile()
 		err = fileData.DelInfo(shortUrl)
 	}else{
 		//save into search
@@ -45,7 +51,7 @@ func (f *Base) delFileBase(md5 string) error {
 	)
 	if f.useRedis {
 		//del from redis
-		fileData := data.GetRedisData().GetFile()
+		fileData := f.data.GetFile()
 		err = fileData.DelBase(md5)
 	}else{
 		//del from search
@@ -63,7 +69,7 @@ func (f *Base) getFileInfo(shortUrl string) (*json.FileInfoJson, error) {
 	)
 	if f.useRedis {
 		//get from redis
-		fileData := data.GetRedisData().GetFile()
+		fileData := f.data.GetFile()
 		fileInfoObj, err = fileData.GetInfo(shortUrl)
 	}else{
 		//get from search
@@ -79,7 +85,7 @@ func (f *Base) getFileBase(md5 string) (*json.FileBaseJson, error) {
 	)
 	if f.useRedis {
 		//get from redis
-		fileData := data.GetRedisData().GetFile()
+		fileData := f.data.GetFile()
 		fileBaseObj, err = fileData.GetBase(md5)
 	}else{
 		//get from search
@@ -96,7 +102,7 @@ func (f *Base) saveFileInfo(obj *json.FileInfoJson) error {
 	)
 	if f.useRedis {
 		//save into redis
-		fileData := data.GetRedisData().GetFile()
+		fileData := f.data.GetFile()
 		err = fileData.AddInfo(obj)
 	}else{
 		//save into search
@@ -111,7 +117,7 @@ func (f *Base) saveFileBase(obj *json.FileBaseJson) error {
 	)
 	if f.useRedis {
 		//save into redis
-		fileData := data.GetRedisData().GetFile()
+		fileData := f.data.GetFile()
 		err = fileData.AddBase(obj)
 	}else{
 		//save into search

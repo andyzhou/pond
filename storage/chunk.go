@@ -224,6 +224,10 @@ func (f *Chunk) SetUseRedis(useRedis bool) {
 	f.SetBaseUseRedis(useRedis)
 }
 
+func (f *Chunk) SetData(data *data.InterRedisData) {
+	f.data = data
+}
+
 ////////////////
 //private func
 ////////////////\
@@ -240,7 +244,7 @@ func (f *Chunk) addNewRemovedFile(obj *json.FileBaseJson) error {
 
 	if f.useRedis {
 		//save into redis
-		fileData := data.GetRedisData().GetFile()
+		fileData := f.data.GetFile()
 		err = fileData.AddRemovedFileBase(obj.Md5, obj.Blocks)
 	}else{
 		//save int search
@@ -258,7 +262,7 @@ func (f *Chunk) loadRemovedFiles() {
 
 	if f.useRedis {
 		//load from redis
-		fileData := data.GetRedisData().GetFile()
+		fileData := f.data.GetFile()
 		for {
 			//get batch records
 			zSlice, err := fileData.LoadRemovedFileBase(page, pageSize)

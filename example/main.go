@@ -17,7 +17,6 @@ import (
 const (
 	RedisAddr = "127.0.0.1:6379"
 	DataDir = "./private"
-	ShortUrl = "4Al0Yt"
 )
 
 //del data
