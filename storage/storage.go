@@ -26,13 +26,13 @@ import (
 
 //face info
 type Storage struct {
-	wg *sync.WaitGroup //reference
-	cfg *conf.Config //reference
-	redisCfg *conf.RedisConfig //reference
-	manager *Manager
-	data *data.InterRedisData
-	useRedis bool
-	initDone bool
+	wg           *sync.WaitGroup   //reference
+	cfg          *conf.Config      //reference
+	redisCfg     *conf.RedisConfig //reference
+	manager      *Manager
+	data         *data.InterRedisData
+	useRedis     bool
+	initDone     bool
 	searchLocker sync.RWMutex
 	Base
 	utils.Utils

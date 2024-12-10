@@ -158,7 +158,9 @@ func (f *Chunk) directWriteData(
 	//copy whole data to dest byte buff
 	copy(byteData, byteBuff.Bytes())
 
-	//write block buffer data into chunk
+	//write block buffer data into chunk with locker
+	f.fileLocker.Lock()
+	defer f.fileLocker.Unlock()
 	_, err := f.file.WriteAt(byteData, offset)
 	if err != nil {
 		resp.Err = err

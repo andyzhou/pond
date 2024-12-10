@@ -132,9 +132,6 @@ func (f *Chunk) directReadData(
 	byteData := make([]byte, size)
 
 	//read real data and sync active time
-	f.fileLocker.Lock()
-	defer f.fileLocker.Unlock()
-
 	if !skipHeader {
 		//read and unpack header
 		header := make([]byte, headerLen)
@@ -152,6 +149,8 @@ func (f *Chunk) directReadData(
 	}
 
 	//read real data
+	f.fileLocker.Lock()
+	defer f.fileLocker.Unlock()
 	_, err := f.file.ReadAt(byteData, offset + headerLen)
 	f.lastActiveTime = time.Now().Unix()
 	return byteData, err

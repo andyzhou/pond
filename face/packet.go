@@ -24,9 +24,9 @@ const (
 
 //face info
 type Packet struct {
-	maxPackSize int64
+	maxPackSize  int64
 	littleEndian bool
-	byteOrder binary.ByteOrder
+	byteOrder    binary.ByteOrder
 }
 
 //construct

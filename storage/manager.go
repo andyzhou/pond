@@ -21,18 +21,18 @@ import (
 
 //face info
 type Manager struct {
-	wg *sync.WaitGroup //reference
-	cfg *conf.Config //reference
-	data *data.InterRedisData //reference
-	chunk *Chunk
-	meta *Meta
-	ticker *queue.Ticker
-	chunkMap sync.Map //chunkId -> *Chunk, active chunk file map
+	wg           *sync.WaitGroup      //reference
+	cfg          *conf.Config         //reference
+	data         *data.InterRedisData //reference
+	chunk        *Chunk
+	meta         *Meta
+	ticker       *queue.Ticker
+	chunkMap     sync.Map //chunkId -> *Chunk, active chunk file map
 	chunkMaxSize int64
-	chunks int32 //atomic count
-	useRedis bool
-	initDone bool
-	lazyMode bool
+	chunks       int32 //atomic count
+	useRedis     bool
+	initDone     bool
+	lazyMode     bool
 	sync.RWMutex
 }
 

@@ -27,22 +27,22 @@ import (
 
 //face info
 type Chunk struct {
-	cfg *conf.Config //reference
-	chunkObj *json.ChunkFileJson
-	gob *util.Gob
-	file *os.File //chunk file handler
-	readQueue *queue.Queue
-	writeQueue *queue.Queue
-	metaTicker *queue.Ticker
-	chunkFileId int64
-	metaFilePath string
-	dataFilePath string
-	lastActiveTime int64 //time stamp value
-	openDone bool
-	metaUpdated bool
+	cfg                 *conf.Config //reference
+	chunkObj            *json.ChunkFileJson
+	gob                 *util.Gob
+	file                *os.File //chunk file handler
+	readQueue           *queue.Queue
+	writeQueue          *queue.Queue
+	metaTicker          *queue.Ticker
+	chunkFileId         int64
+	metaFilePath        string
+	dataFilePath        string
+	lastActiveTime      int64 //time stamp value
+	openDone            bool
+	metaUpdated         bool
 	writeLazy, readLazy bool
-	metaLocker sync.RWMutex
-	fileLocker sync.RWMutex
+	metaLocker          sync.RWMutex
+	fileLocker          sync.RWMutex
 	sync.RWMutex
 }
 

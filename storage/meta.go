@@ -25,11 +25,11 @@ import (
 
 //face info
 type Meta struct {
-	wg 			*sync.WaitGroup //reference
-	cfg         *conf.Config //reference
+	wg          *sync.WaitGroup //reference
+	cfg         *conf.Config    //reference
 	gob         *util.Gob
 	shortUrl    *util.ShortUrl
-	ticker 		*queue.Ticker
+	ticker      *queue.Ticker
 	metaFile    string
 	metaJson    *json.MetaJson //running data
 	metaUpdated bool

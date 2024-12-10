@@ -33,6 +33,7 @@ go test -v
 go test -v -run="Read"
 
 go test -bench=.
+go test -bench=Write
 go test -bench=Read -benchmem -benchtime=20s
 
 ```
