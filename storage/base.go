@@ -11,7 +11,7 @@ import (
  */
 
 type Base struct {
-	data *data.InterRedisData //reference obj
+	data     *data.InterRedisData //reference obj
 	useRedis bool
 }
 

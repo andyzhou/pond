@@ -4,16 +4,17 @@ import (
 	"encoding/gob"
 	"errors"
 	"fmt"
+	"log"
+	"sync"
+	"sync/atomic"
+	"time"
+
 	"github.com/andyzhou/pond/conf"
 	"github.com/andyzhou/pond/define"
 	"github.com/andyzhou/pond/json"
 	"github.com/andyzhou/pond/utils"
 	"github.com/andyzhou/tinylib/queue"
 	"github.com/andyzhou/tinylib/util"
-	"log"
-	"sync"
-	"sync/atomic"
-	"time"
 )
 
 /*

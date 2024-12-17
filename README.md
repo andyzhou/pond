@@ -1,5 +1,5 @@
 # About
-This is a big file storage library, still under developing.
+This is a big file storage library.
 
 # Feature
 - one file support TB level storage

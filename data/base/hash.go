@@ -10,6 +10,8 @@ import (
 )
 
 /*
+ * @author <AndyZhou>
+ * @mail <diudiu8848@163.com>
  * general hash data
  */
 

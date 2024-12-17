@@ -2,10 +2,11 @@ package main
 
 import (
 	"fmt"
-	"github.com/andyzhou/pond"
-	"github.com/andyzhou/pond/define"
 	"log"
 	"os"
+
+	"github.com/andyzhou/pond"
+	"github.com/andyzhou/pond/define"
 )
 
 /*
@@ -16,7 +17,7 @@ import (
 
 const (
 	RedisAddr = "127.0.0.1:6379"
-	DataDir = "./private"
+	DataDir   = "./private"
 )
 
 //del data

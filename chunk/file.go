@@ -2,9 +2,10 @@ package chunk
 
 import (
 	"fmt"
-	"github.com/andyzhou/pond/define"
 	"os"
 	"time"
+
+	"github.com/andyzhou/pond/define"
 )
 
 /*

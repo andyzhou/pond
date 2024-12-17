@@ -2,8 +2,9 @@ package chunk
 
 import (
 	"errors"
-	"github.com/andyzhou/pond/face"
 	"time"
+
+	"github.com/andyzhou/pond/face"
 )
 
 /*

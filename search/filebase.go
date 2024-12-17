@@ -2,14 +2,15 @@ package search
 
 import (
 	"errors"
+	"log"
+	"sync"
+
 	"github.com/andyzhou/pond/define"
 	"github.com/andyzhou/pond/json"
 	"github.com/andyzhou/tinylib/queue"
 	"github.com/andyzhou/tinysearch"
 	tDefine "github.com/andyzhou/tinysearch/define"
 	tJson "github.com/andyzhou/tinysearch/json"
-	"log"
-	"sync"
 )
 
 /*
@@ -21,9 +22,9 @@ import (
 
 //face info
 type FileBase struct {
-	ts *tinysearch.Service //reference
-	wg *sync.WaitGroup //reference
-	queue *queue.Queue
+	ts        *tinysearch.Service //reference
+	wg        *sync.WaitGroup     //reference
+	queue     *queue.Queue
 	queueSize int
 }
 

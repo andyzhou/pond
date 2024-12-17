@@ -2,12 +2,13 @@ package search
 
 import (
 	"errors"
+	"sync"
+
 	"github.com/andyzhou/pond/define"
 	"github.com/andyzhou/pond/json"
 	"github.com/andyzhou/tinylib/queue"
 	"github.com/andyzhou/tinysearch"
 	tJson "github.com/andyzhou/tinysearch/json"
-	"sync"
 )
 
 /*
@@ -19,9 +20,9 @@ import (
 
 //face info
 type FileInfo struct {
-	ts *tinysearch.Service //reference
-	wg *sync.WaitGroup //reference
-	queue *queue.Queue //inter write or delete queue
+	ts        *tinysearch.Service //reference
+	wg        *sync.WaitGroup     //reference
+	queue     *queue.Queue        //inter write or delete queue
 	queueSize int
 }
 

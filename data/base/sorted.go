@@ -3,13 +3,15 @@ package base
 import (
 	"errors"
 	"fmt"
-	"github.com/andyzhou/pond/define"
 
+	"github.com/andyzhou/pond/define"
 	"github.com/andyzhou/tinylib/redis"
 	genRedis "github.com/go-redis/redis/v8"
 )
 
 /*
+ * @author <AndyZhou>
+ * @mail <diudiu8848@163.com>
  * general sorted data
  * - use sorted set as storage mode
  */

@@ -2,11 +2,12 @@ package pond
 
 import (
 	"errors"
+	"sync"
+
 	"github.com/andyzhou/pond/conf"
 	"github.com/andyzhou/pond/define"
 	"github.com/andyzhou/pond/json"
 	"github.com/andyzhou/pond/storage"
-	"sync"
 )
 
 /*

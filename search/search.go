@@ -26,13 +26,13 @@ var (
 
 //face info
 type Search struct {
-	rootPath string
+	rootPath  string
 	queueSize int
-	initDone bool
-	info *FileInfo
-	base *FileBase
-	ts *tinysearch.Service
-	wg *sync.WaitGroup //reference
+	initDone  bool
+	info      *FileInfo
+	base      *FileBase
+	ts        *tinysearch.Service
+	wg        *sync.WaitGroup //reference
 	utils.Utils
 }
 

@@ -2,12 +2,13 @@ package storage
 
 import (
 	"errors"
+	"sort"
+	"sync"
+
 	"github.com/andyzhou/pond/data"
 	"github.com/andyzhou/pond/define"
 	"github.com/andyzhou/pond/json"
 	"github.com/andyzhou/pond/search"
-	"sort"
-	"sync"
 )
 
 /*
@@ -20,7 +21,7 @@ import (
 //inter data type
 type (
 	removedBaseFile struct {
-		md5 string
+		md5    string
 		blocks int64
 	}
 )

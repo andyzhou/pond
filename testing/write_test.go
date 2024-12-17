@@ -3,9 +3,10 @@ package testing
 import (
 	"errors"
 	"fmt"
-	"github.com/andyzhou/pond"
 	"testing"
 	"time"
+
+	"github.com/andyzhou/pond"
 )
 
 /*

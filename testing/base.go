@@ -2,10 +2,11 @@ package testing
 
 import (
 	"fmt"
-	"github.com/andyzhou/pond"
 	"log"
 	"os"
 	"sync"
+
+	"github.com/andyzhou/pond"
 )
 
 const (

@@ -3,6 +3,11 @@ package storage
 import (
 	"errors"
 	"fmt"
+	"math/rand"
+	"net/http"
+	"sync"
+	"time"
+
 	"github.com/andyzhou/pond/chunk"
 	"github.com/andyzhou/pond/conf"
 	"github.com/andyzhou/pond/data"
@@ -10,10 +15,6 @@ import (
 	"github.com/andyzhou/pond/json"
 	"github.com/andyzhou/pond/search"
 	"github.com/andyzhou/pond/utils"
-	"math/rand"
-	"net/http"
-	"sync"
-	"time"
 )
 
 /*

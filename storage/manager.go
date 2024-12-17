@@ -2,14 +2,15 @@ package storage
 
 import (
 	"errors"
+	"log"
+	"sync"
+	"sync/atomic"
+
 	"github.com/andyzhou/pond/chunk"
 	"github.com/andyzhou/pond/conf"
 	"github.com/andyzhou/pond/data"
 	"github.com/andyzhou/pond/define"
 	"github.com/andyzhou/tinylib/queue"
-	"log"
-	"sync"
-	"sync/atomic"
 )
 
 /*

@@ -3,16 +3,19 @@ package data
 import (
 	"errors"
 	"fmt"
+	"time"
+
 	"github.com/andyzhou/pond/conf"
 	"github.com/andyzhou/pond/data/base"
 	"github.com/andyzhou/pond/define"
 	"github.com/andyzhou/pond/json"
 	"github.com/andyzhou/tinylib/util"
 	genRedis "github.com/go-redis/redis/v8"
-	"time"
 )
 
 /*
+ * @author <AndyZhou>
+ * @mail <diudiu8848@163.com>
  * file base and info data
  * - use batch hash table keys
  * - hashed by the first two element of short url or md5

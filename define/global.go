@@ -16,12 +16,12 @@ const (
 // default
 const (
 	DefaultPacketMaxSize = 2048 //2KB
-	DefaultQueueSize = 1024
+	DefaultQueueSize     = 1024
 )
 
 // others
 const (
-	RecPerPage = 10
+	RecPerPage           = 10
 	ManagerTickerSeconds = 60 //xx seconds
-	AsciiCharSize = 2
+	AsciiCharSize        = 2
 )

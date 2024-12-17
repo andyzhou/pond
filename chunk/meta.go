@@ -2,9 +2,10 @@ package chunk
 
 import (
 	"errors"
+	"log"
+
 	"github.com/andyzhou/pond/define"
 	"github.com/andyzhou/pond/json"
-	"log"
 )
 
 /*

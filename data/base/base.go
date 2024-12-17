@@ -3,15 +3,17 @@ package base
 import (
 	"context"
 	"errors"
-	"github.com/andyzhou/pond/conf"
-	"github.com/andyzhou/pond/define"
 	"time"
 
+	"github.com/andyzhou/pond/conf"
+	"github.com/andyzhou/pond/define"
 	"github.com/andyzhou/tinylib/redis"
 	genRedis "github.com/go-redis/redis/v8"
 )
 
 /*
+ * @author <AndyZhou>
+ * @mail <diudiu8848@163.com>
  * base redis data face
  */
 

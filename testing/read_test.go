@@ -1,8 +1,9 @@
 package testing
 
 import (
-	"github.com/andyzhou/pond"
 	"testing"
+
+	"github.com/andyzhou/pond"
 )
 
 /*
