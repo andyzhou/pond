@@ -18,14 +18,14 @@ type Config struct {
 //used for file meta info storage
 type RedisConfig struct {
 	//basic
-	GroupTag  string	//used for group keys
-	Address   string
-	Password  string
-	DBNum     int
-	Pools     int
+	GroupTag string //used for group keys
+	Address  string
+	Password string
+	DBNum    int
+	Pools    int
 
 	//optional
-	KeyPrefix string
+	KeyPrefix        string
 	FileInfoHashKeys int
 	FileBaseHashKeys int
 }

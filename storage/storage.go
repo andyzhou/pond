@@ -42,6 +42,7 @@ type Storage struct {
 //construct
 func NewStorage(wg *sync.WaitGroup) *Storage {
 	this := &Storage{
+		wg: wg,
 		manager: NewManager(wg),
 		data: data.NewInterRedisData(),
 	}
@@ -238,16 +239,14 @@ func (f *Storage) WriteData(
 //set config
 func (f *Storage) SetConfig(
 	cfg *conf.Config,
-	wg *sync.WaitGroup,
 	redisCfg ...*conf.RedisConfig) error {
 	var (
 		oneRedisCfg *conf.RedisConfig
 	)
 	//check
-	if cfg == nil || cfg.DataPath == "" || wg == nil {
+	if cfg == nil || cfg.DataPath == "" {
 		return errors.New("invalid parameter")
 	}
-	f.wg = wg
 
 	//init redis data
 	if redisCfg != nil && len(redisCfg) > 0 {
@@ -263,7 +262,7 @@ func (f *Storage) SetConfig(
 		f.manager.SetData(f.data)
 	}else{
 		//search setup
-		err := search.GetSearch().SetCore(cfg.DataPath, wg, cfg.InterQueueSize)
+		err := search.GetSearch().SetCore(cfg.DataPath, cfg.InterQueueSize)
 		if err != nil {
 			return err
 		}

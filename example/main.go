@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"sync"
+	"time"
 
 	"github.com/andyzhou/pond"
 	"github.com/andyzhou/pond/define"
@@ -54,6 +56,9 @@ func getFileInfos(p *pond.Pond) {
 }
 
 func main() {
+	var (
+		wg sync.WaitGroup
+	)
 	//init face
 	p := pond.NewPond()
 
@@ -86,6 +91,9 @@ func main() {
 		return
 	}
 
+	//add group
+	wg.Add(1)
+
 	//file info list
 	//getFileInfos(p)
 
@@ -94,14 +102,20 @@ func main() {
 	log.Printf("write data, short url:%v\n", shortUrl)
 
 	//read data
-	readData(p, shortUrl)
+	//readData(p, shortUrl)
 
 	//del data
 	//delData(p, ShortUrl)
 
+	//delay quit
+	df := func() {
+		wg.Done()
+	}
+	time.AfterFunc(time.Second * 3, df)
+
+	wg.Wait()
+
 	//quit
 	p.Quit()
-
-	p.Wait()
 	log.Printf("example done")
 }

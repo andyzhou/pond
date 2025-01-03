@@ -21,12 +21,13 @@ import (
 var (
 	_pond *Pond
 	_pondOnce sync.Once
-	_wg sync.WaitGroup
+	//_wg sync.WaitGroup
 )
 
 //face info
 type Pond struct {
 	storage *storage.Storage
+	wg sync.WaitGroup
 	initDone bool
 }
 
@@ -40,8 +41,10 @@ func GetPond() *Pond {
 
 //construct
 func NewPond() *Pond {
+	wg := sync.WaitGroup{}
 	this := &Pond{
-		storage: storage.NewStorage(&_wg),
+		wg: wg,
+		storage: storage.NewStorage(&wg),
 	}
 	return this
 }
@@ -50,15 +53,6 @@ func NewPond() *Pond {
 func (f *Pond) Quit() {
 	f.storage.Quit()
 }
-
-//wait
-func (f *Pond) Wait() {
-	_wg.Wait()
-}
-
-////////////////////
-//api for file index
-////////////////////
 
 //get batch file info by create time
 //return total, []*FileInfoJson, error
@@ -71,10 +65,6 @@ func (f *Pond) GetFiles(
 	}
 	return f.storage.GetFilesInfo(page, pageSize)
 }
-
-////////////////////
-//api for file data
-////////////////////
 
 //del data
 func (f *Pond) DelData(shortUrl string) error {
@@ -112,10 +102,6 @@ func (f *Pond) WriteData(
 	return f.storage.WriteData(data, shortUrls...)
 }
 
-///////////////////////
-//api for config setup
-///////////////////////
-
 //set config, STEP-2
 func (f *Pond) SetConfig(
 	cfg *conf.Config,
@@ -140,7 +126,7 @@ func (f *Pond) SetConfig(
 	}
 
 	//call inter func
-	err := f.storage.SetConfig(cfg, &_wg, redisCfg...)
+	err := f.storage.SetConfig(cfg, redisCfg...)
 	if err != nil {
 		return err
 	}

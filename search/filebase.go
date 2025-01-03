@@ -2,9 +2,6 @@ package search
 
 import (
 	"errors"
-	"log"
-	"sync"
-
 	"github.com/andyzhou/pond/define"
 	"github.com/andyzhou/pond/json"
 	"github.com/andyzhou/tinylib/queue"
@@ -23,7 +20,7 @@ import (
 //face info
 type FileBase struct {
 	ts        *tinysearch.Service //reference
-	wg        *sync.WaitGroup     //reference
+	//wg        *sync.WaitGroup     //reference
 	queue     *queue.Queue
 	queueSize int
 }
@@ -31,7 +28,6 @@ type FileBase struct {
 //construct
 func NewFileBase(
 	ts *tinysearch.Service,
-	wg *sync.WaitGroup,
 	queueSizes ...int) *FileBase {
 	var (
 		queueSize int
@@ -43,7 +39,6 @@ func NewFileBase(
 	//self init
 	this := &FileBase{
 		ts: ts,
-		wg: wg,
 		queueSize: queueSize,
 	}
 	this.interInit()
@@ -55,18 +50,14 @@ func (f *FileBase) Quit() {
 	if f.queue != nil {
 		f.queue.Quit()
 	}
-	if f.wg != nil {
-		f.wg.Done()
-		log.Println("pond.search.fileBase.cbForTickQuit")
-	}
 }
 
 //get batch filter by removed and sort by blocks
 //sync opt
 func (f *FileBase) GetBatchByBlocks(
-			blocksMin, blocksMax int64,
-			pageSize int,
-		) (int64, []*json.FileBaseJson, error) {
+		blocksMin, blocksMax int64,
+		pageSize int,
+	) (int64, []*json.FileBaseJson, error) {
 	//check
 	if blocksMin <= 0 || blocksMax <= blocksMin {
 		return 0, nil, errors.New("invalid parameter")
@@ -107,8 +98,8 @@ func (f *FileBase) GetBatchByBlocks(
 //get batch removed blocks
 //sync opt
 func (f *FileBase) GetBatchByRemoved(
-			page, pageSize int,
-		) (int64, []*json.FileBaseJson, error) {
+		page, pageSize int,
+	) (int64, []*json.FileBaseJson, error) {
 	//check
 	if page <= 0 {
 		page = define.DefaultPage
@@ -156,11 +147,11 @@ func (f *FileBase) GetBatchByRemoved(
 //sort by block size asc
 //sync opt
 func (f *FileBase) QueryBatch(
-			filters []*tJson.FilterField,
-			sorts []*tJson.SortField,
-			page,
-			pageSize int,
-		) (int64, []*json.FileBaseJson, error) {
+		filters []*tJson.FilterField,
+		sorts []*tJson.SortField,
+		page,
+		pageSize int,
+	) (int64, []*json.FileBaseJson, error) {
 	//check
 	if page <= 0 {
 		page = define.DefaultPage
@@ -387,9 +378,5 @@ func (f *FileBase) interInit() {
 
 		//set cb for queue opt
 		f.queue.SetCallback(f.cbForQueueOpt)
-	}
-
-	if f.wg != nil {
-		f.wg.Add(1)
 	}
 }

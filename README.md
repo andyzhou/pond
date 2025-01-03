@@ -3,8 +3,8 @@ This is a big file storage library.
 
 # Feature
 - one file support TB level storage
-- use redis cache for high performance
-- use beleve search as file info search
+- support redis cache for high performance
+- default use beleve search as file info search
 
 # Config setup
 ```

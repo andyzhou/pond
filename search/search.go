@@ -20,7 +20,7 @@ import (
 
 //global variable
 var (
-	_search *Search
+	_search     *Search
 	_searchOnce sync.Once
 )
 
@@ -32,7 +32,6 @@ type Search struct {
 	info      *FileInfo
 	base      *FileBase
 	ts        *tinysearch.Service
-	wg        *sync.WaitGroup //reference
 	utils.Utils
 }
 
@@ -75,7 +74,6 @@ func (f *Search) GetFileBase() *FileBase {
 //set root path
 func (f *Search) SetCore(
 	path string,
-	wg *sync.WaitGroup,
 	queueSizes ...int) error {
 	//check
 	if path == "" {
@@ -84,7 +82,6 @@ func (f *Search) SetCore(
 	if f.initDone {
 		return nil
 	}
-	f.wg = wg
 
 	//setup queue size
 	//if not set size, queue will be closed
@@ -117,6 +114,6 @@ func (f *Search) initIndex() {
 	f.ts.SetDataPath(f.rootPath)
 
 	//init file base and info
-	f.base = NewFileBase(f.ts, f.wg, f.queueSize)
-	f.info = NewFileInfo(f.ts, f.wg, f.queueSize)
+	f.base = NewFileBase(f.ts, f.queueSize)
+	f.info = NewFileInfo(f.ts, f.queueSize)
 }

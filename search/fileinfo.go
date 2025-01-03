@@ -2,8 +2,6 @@ package search
 
 import (
 	"errors"
-	"sync"
-
 	"github.com/andyzhou/pond/define"
 	"github.com/andyzhou/pond/json"
 	"github.com/andyzhou/tinylib/queue"
@@ -21,7 +19,6 @@ import (
 //face info
 type FileInfo struct {
 	ts        *tinysearch.Service //reference
-	wg        *sync.WaitGroup     //reference
 	queue     *queue.Queue        //inter write or delete queue
 	queueSize int
 }
@@ -29,7 +26,6 @@ type FileInfo struct {
 //construct
 func NewFileInfo(
 	ts *tinysearch.Service,
-	wg *sync.WaitGroup,
 	queueSizes ...int) *FileInfo {
 	var (
 		queueSize int
@@ -41,7 +37,6 @@ func NewFileInfo(
 	//self init
 	this := &FileInfo{
 		ts: ts,
-		wg: wg,
 		queueSize: queueSize,
 	}
 	this.interInit()
@@ -52,9 +47,6 @@ func NewFileInfo(
 func (f *FileInfo) Quit() {
 	if f.queue != nil {
 		f.queue.Quit()
-	}
-	if f.wg != nil {
-		f.wg.Done()
 	}
 }
 
@@ -307,9 +299,5 @@ func (f *FileInfo) interInit() {
 		f.queue = queue.NewQueue(f.queueSize)
 		//set cb for queue
 		f.queue.SetCallback(f.cbForQueueOpt)
-	}
-
-	if f.wg != nil {
-		f.wg.Add(1)
 	}
 }
