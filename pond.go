@@ -19,15 +19,15 @@ import (
 
 //global variable
 var (
-	_pond *Pond
+	_pond     *Pond
 	_pondOnce sync.Once
 	//_wg sync.WaitGroup
 )
 
 //face info
 type Pond struct {
-	storage *storage.Storage
-	wg sync.WaitGroup
+	storage  *storage.Storage
+	wg       sync.WaitGroup
 	initDone bool
 }
 

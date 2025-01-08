@@ -41,7 +41,7 @@ func TestWrite(t *testing.T) {
 //bench write api
 func BenchmarkWrite(b *testing.B) {
 	var (
-		shortUrl string
+		//shortUrl string
 		err error
 	)
 	//set times
@@ -53,11 +53,11 @@ func BenchmarkWrite(b *testing.B) {
 	failed := 0
 	succeed := 0
 	for n := 0; n < b.N; n++ {
-		shortUrl, err = writeData(p)
+		_, err = writeData(p)
 		if err != nil {
 			failed++
 		}else{
-			b.Logf("n:%v, shortUrl:%v\n", n, shortUrl)
+			//b.Logf("n:%v, shortUrl:%v\n", n, shortUrl)
 			succeed++
 		}
 	}

@@ -60,5 +60,5 @@ func BenchmarkRead(b *testing.B) {
 
 	//quit
 	//p.Quit()
-	b.Logf("read bench mark all done!\n")
+	//b.Logf("read bench mark all done!\n")
 }

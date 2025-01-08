@@ -44,7 +44,6 @@ type Chunk struct {
 	writeLazy, readLazy bool
 	metaLocker          sync.RWMutex
 	fileLocker          sync.RWMutex
-	sync.RWMutex
 }
 
 //init for gob register
@@ -71,6 +70,8 @@ func NewChunk(
 		readQueue: queue.NewQueue(),
 		writeQueue: queue.NewQueue(),
 	}
+
+	//inter init
 	this.interInit()
 	return this
 }
@@ -157,8 +158,7 @@ func (f *Chunk) interInit() {
 	//load meta data
 	err := f.loadMetaFile()
 	if err != nil {
-		log.Printf("chunk load meta file %v failed, err:%v\n",
-			f.metaFilePath, err.Error())
+		log.Printf("chunk load meta file %v failed, err:%v\n", f.metaFilePath, err.Error())
 	}
 
 	//set cb for read and write file queue
