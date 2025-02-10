@@ -10,6 +10,7 @@ type Config struct {
 	ReadLazy        bool   //switcher for lazy queue opt
 	WriteLazy       bool   //switcher for lazy queue opt
 	CheckSame       bool   //switcher for check same data
+	UseMemoryMap	bool   //switcher for use memory map file
 	FileActiveHours int32  //chunk file active hours
 	InterQueueSize  int	   //for inter data save queue size, default 1024
 }

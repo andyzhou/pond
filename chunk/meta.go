@@ -67,11 +67,11 @@ func (f *Chunk) loadMetaFile() error {
 	if err != nil {
 		//init default value
 		f.chunkObj = json.NewChunkFileJson()
-		return err
+	}else{
+		f.chunkObj = chunkObj
 	}
 
 	//sync chunk obj
-	f.chunkObj = chunkObj
 	if f.chunkObj != nil {
 		needUpdate := false
 		if f.chunkObj.Id <= 0 {

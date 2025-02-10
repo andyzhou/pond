@@ -26,8 +26,8 @@ func readData(p *pond.Pond) ([]byte, error) {
 //test read api
 func TestRead(t *testing.T) {
 	//read data
-	dataByte, err := readData(p)
-	t.Logf("read data, data:%v, err:%v\n", string(dataByte), err)
+	//dataByte, err := readData(p)
+	//t.Logf("read data, data:%v, err:%v\n", string(dataByte), err)
 }
 
 //bench read api

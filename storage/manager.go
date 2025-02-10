@@ -5,6 +5,7 @@ import (
 	"log"
 	"sync"
 	"sync/atomic"
+	"time"
 
 	"github.com/andyzhou/pond/chunk"
 	"github.com/andyzhou/pond/conf"
@@ -99,8 +100,8 @@ func (f *Manager) GetActiveChunk() (*chunk.Chunk, error) {
 	)
 
 	//get active chunk data with locker
-	f.Lock()
-	defer f.Unlock()
+	//f.Lock()
+	//defer f.Unlock()
 	if f.chunks > 0 {
 		//get active chunk
 		sf := func(k, v interface{}) bool {
@@ -136,8 +137,8 @@ func (f *Manager) GetActiveChunk() (*chunk.Chunk, error) {
 //return newChunkId
 func (f *Manager) InitNewChunk() int64 {
 	//create new with locker
-	f.Lock()
-	defer f.Unlock()
+	//f.Lock()
+	//defer f.Unlock()
 
 	//begin create new
 	chunkFileObj := f.meta.CreateNewChunk()
@@ -207,14 +208,15 @@ func (f *Manager) SetConfig(cfg *conf.Config, userRedis ...bool) error {
 		//pre-create batch empty chunk files
 		for i := 1; i <= cfg.MinChunkFiles; i++ {
 			//create new chunk info
-			chunkId := f.InitNewChunk()
+			f.InitNewChunk()
 
-			//init chunk face
-			chunkObj := chunk.NewChunk(chunkId, f.cfg)
-
-			//storage into run map
-			f.chunkMap.Store(chunkId, chunkObj)
+			////init chunk face
+			//chunkObj := chunk.NewChunk(chunkId, f.cfg)
+			//
+			////storage into run map
+			//f.chunkMap.Store(chunkId, chunkObj)
 			chunks++
+			time.Sleep(time.Second/5)
 		}
 		//update chunk count
 		atomic.StoreInt32(&f.chunks, chunks)

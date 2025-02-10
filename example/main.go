@@ -32,7 +32,7 @@ func delData(p *pond.Pond, shortUrl string) error {
 //write data
 func writeData(p *pond.Pond, shortUrls ...string) (string, error) {
 	//now := time.Now().Unix()
-	data := []byte(fmt.Sprintf("hello-%v", 2))
+	data := []byte(fmt.Sprintf("hello-%v", time.Now().Unix()))
 	shortUrl, subErr := p.WriteData(data, shortUrls...)
 	log.Printf("write data, shortUrl:%v, err:%v\n", shortUrl, subErr)
 	return shortUrl, subErr
@@ -61,6 +61,7 @@ func main() {
 	)
 	//init face
 	p := pond.NewPond()
+	time.Sleep(time.Second/10)
 
 	//get current path
 	curPath, err := os.Getwd()
@@ -74,8 +75,9 @@ func main() {
 	cfg := p.GenConfig()
 	cfg.DataPath = dataPath
 	cfg.CheckSame = true
-	cfg.WriteLazy = true
+	cfg.WriteLazy = false
 	cfg.FixedBlockSize = true
+	cfg.UseMemoryMap = true
 	cfg.ChunkBlockSize = define.DefaultChunkBlockSize
 
 	//gen new redis config
@@ -102,7 +104,7 @@ func main() {
 	log.Printf("write data, short url:%v\n", shortUrl)
 
 	//read data
-	//readData(p, shortUrl)
+	readData(p, shortUrl)
 
 	//del data
 	//delData(p, ShortUrl)

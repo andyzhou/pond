@@ -32,6 +32,7 @@ type Chunk struct {
 	chunkObj            *json.ChunkFileJson
 	gob                 *util.Gob
 	file                *os.File //chunk file handler
+	data                []byte   //memory map data
 	readQueue           *queue.Queue
 	writeQueue          *queue.Queue
 	metaTicker          *queue.Ticker
@@ -155,8 +156,15 @@ func (f *Chunk) interInit() {
 		f.writeLazy = true
 	}
 
+	//open file
+	err := f.openDataFile()
+	if err != nil {
+		log.Printf("chunk file %v open failed, err:%v\n", f.dataFilePath, err.Error())
+		panic(any(err))
+	}
+
 	//load meta data
-	err := f.loadMetaFile()
+	err = f.loadMetaFile()
 	if err != nil {
 		log.Printf("chunk load meta file %v failed, err:%v\n", f.metaFilePath, err.Error())
 	}

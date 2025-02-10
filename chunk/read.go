@@ -103,6 +103,7 @@ func (f *Chunk) directReadData(
 	) ([]byte, error) {
 	var (
 		skipHeader bool
+		err error
 	)
 	//check
 	if offset < 0 || end <= 0 {
@@ -113,15 +114,8 @@ func (f *Chunk) directReadData(
 	}
 
 	//check and open file
-	if !f.IsOpened() {
-		err := f.openDataFile()
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	if f.file == nil {
-		return nil, errors.New("chunk file closed")
+	if !f.IsOpened() || f.file == nil {
+		return nil, errors.New("data file not opened yet")
 	}
 
 	//get header message
@@ -133,11 +127,23 @@ func (f *Chunk) directReadData(
 	byteData := make([]byte, size)
 
 	//read real data and sync active time
+	f.fileLocker.Lock()
+	defer f.fileLocker.Unlock()
 	if !skipHeader {
 		//read and unpack header
 		header := make([]byte, headerLen)
-		_, err := f.file.ReadAt(header, offset)
-		if err != nil {
+		if f.cfg.UseMemoryMap {
+			//use memory map data
+			dataLen := int64(len(f.data))
+			if offset > dataLen || (offset + headerLen) > dataLen {
+				return nil, errors.New("offset or header len exceed file data size")
+			}
+			copy(header, f.data[offset:headerLen])
+		}else{
+			//read origin file
+			_, err = f.file.ReadAt(header, offset)
+		}
+		if err != nil || header == nil {
 			return nil, err
 		}
 		msg, subErr := pack.UnPack(header)
@@ -149,10 +155,13 @@ func (f *Chunk) directReadData(
 		}
 	}
 
-	//read real data
-	f.fileLocker.Lock()
-	defer f.fileLocker.Unlock()
-	_, err := f.file.ReadAt(byteData, offset + headerLen)
+	if f.cfg.UseMemoryMap && f.data != nil {
+		//use memory map data
+		copy(byteData, f.data[offset+headerLen:])
+	}else{
+		//read real data
+		_, err = f.file.ReadAt(byteData, offset + headerLen)
+	}
 	f.lastActiveTime = time.Now().Unix()
 	return byteData, err
 }

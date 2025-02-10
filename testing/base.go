@@ -12,7 +12,7 @@ import (
 const (
 	RedisAddr = "127.0.0.1:6379"
 	DataDir = "../private"
-	ShortUrl = "wtgAFp"
+	ShortUrl = "4swdwl"
 )
 
 var (
@@ -52,6 +52,7 @@ func initPond() (*pond.Pond, error) {
 	cfg.DataPath = dataPath
 	cfg.FixedBlockSize = true
 	cfg.CheckSame = true
+	cfg.UseMemoryMap = true
 
 	//set redis config
 	redisCfg := p.GenRedisConfig()

@@ -78,6 +78,7 @@ func (f *Base) getFileInfo(shortUrl string) (*json.FileInfoJson, error) {
 	}
 	return fileInfoObj, err
 }
+
 func (f *Base) getFileBase(md5 string) (*json.FileBaseJson, error) {
 	var (
 		fileBaseObj *json.FileBaseJson

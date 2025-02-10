@@ -3,6 +3,7 @@ package testing
 import (
 	"errors"
 	"fmt"
+	"log"
 	"testing"
 	"time"
 
@@ -14,6 +15,11 @@ import (
  * @author <AndyZhou>
  * @mail <diudiu8848@163.com>
  */
+
+var (
+	rounds = 0
+	totalRounds = 3
+)
 
 //init
 func init() {
@@ -27,7 +33,7 @@ func writeData(p *pond.Pond) (string, error) {
 	}
 	//format data
 	now := time.Now().Unix()
-	data := fmt.Sprintf("hell-%v", now)
+	data := fmt.Sprintf("hello-%v", now)
 	return p.WriteData([]byte(data))
 }
 
@@ -36,6 +42,12 @@ func TestWrite(t *testing.T) {
 	//write data
 	shortUrl, subErr := writeData(p)
 	t.Logf("write data, shortUrl:%v, err:%v\n", shortUrl, subErr)
+}
+
+//force close
+func forceClose()  {
+	//p.Quit()
+	log.Printf("xxx")
 }
 
 //bench write api
@@ -68,6 +80,10 @@ func BenchmarkWrite(b *testing.B) {
 	}
 
 	//quit
-	//p.Quit()
 	b.Logf("write bench mark all done!\n")
+	rounds++
+
+	if rounds >= totalRounds {
+		p.Quit()
+	}
 }
