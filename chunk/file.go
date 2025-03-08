@@ -57,7 +57,7 @@ func (f *Chunk) closeDataFile() error {
 //open chunk data file
 func (f *Chunk) openDataFile() error {
 	//check
-	if f.openDone {
+	if f.openDone && f.file != nil {
 		return fmt.Errorf("chunk file %v had opened", f.file)
 	}
 

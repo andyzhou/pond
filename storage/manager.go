@@ -2,7 +2,6 @@ package storage
 
 import (
 	"errors"
-	"log"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -11,7 +10,6 @@ import (
 	"github.com/andyzhou/pond/conf"
 	"github.com/andyzhou/pond/data"
 	"github.com/andyzhou/pond/define"
-	"github.com/andyzhou/tinylib/queue"
 )
 
 /*
@@ -28,7 +26,6 @@ type Manager struct {
 	data         *data.InterRedisData //reference
 	chunk        *Chunk
 	meta         *Meta
-	ticker       *queue.Ticker
 	chunkMap     sync.Map //chunkId -> *Chunk, active chunk file map
 	chunkMaxSize int64
 	chunks       int32 //atomic count
@@ -53,9 +50,6 @@ func NewManager(wg *sync.WaitGroup) *Manager {
 
 //quit
 func (f *Manager) Quit() {
-	if f.ticker != nil {
-		f.ticker.Quit()
-	}
 	f.meta.Quit()
 	sf := func(k, v interface{}) bool {
 		chunkObj, _ := v.(*chunk.Chunk)
@@ -65,6 +59,11 @@ func (f *Manager) Quit() {
 		return true
 	}
 	f.chunkMap.Range(sf)
+
+	//wait group done
+	if f.wg != nil {
+		f.wg.Done()
+	}
 }
 
 //gen new file short url
@@ -258,26 +257,26 @@ func (f *Manager) checkUnActiveChunkFiles() error {
 	return nil
 }
 
-//cb for ticker quit
-func (f *Manager) cbForTickQuit() {
-	if f.wg != nil {
-		f.wg.Done()
-		log.Println("pond.manager.cbForTickQuit")
-	}
-}
-
-//inter chunk files check ticker
-func (f *Manager) startChunkFilesChecker() {
-	//init ticker
-	f.ticker = queue.NewTicker(define.ManagerTickerSeconds)
-	f.ticker.SetCheckerCallback(f.checkUnActiveChunkFiles)
-	f.ticker.SetQuitCallback(f.cbForTickQuit)
-}
+////cb for ticker quit
+//func (f *Manager) cbForTickQuit() {
+//	if f.wg != nil {
+//		f.wg.Done()
+//		log.Println("pond.manager.cbForTickQuit")
+//	}
+//}
+//
+////inter chunk files check ticker
+//func (f *Manager) startChunkFilesChecker() {
+//	//init ticker
+//	f.ticker = queue.NewTicker(define.ManagerTickerSeconds)
+//	f.ticker.SetCheckerCallback(f.checkUnActiveChunkFiles)
+//	f.ticker.SetQuitCallback(f.cbForTickQuit)
+//}
 
 //inter init
 func (f *Manager) interInit() {
 	//start chunk files checker
-	f.startChunkFilesChecker()
+	//f.startChunkFilesChecker()
 
 	//wait group add count
 	if f.wg != nil {

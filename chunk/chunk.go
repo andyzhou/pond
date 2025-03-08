@@ -90,7 +90,7 @@ func (f *Chunk) Quit() {
 	}
 
 	//close opened data file
-	f.closeDataFile()
+	f.CloseFile()
 }
 
 //check file opened or not
