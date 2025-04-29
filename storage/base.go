@@ -29,7 +29,7 @@ func (f *Base) SetBaseData(data *data.InterRedisData) {
 //api for file base and info
 ////////////////////////////
 
-//del file base and info
+//del file info
 func (f *Base) delFileInfo(shortUrl string) error {
 	var (
 		err error
@@ -45,6 +45,8 @@ func (f *Base) delFileInfo(shortUrl string) error {
 	}
 	return err
 }
+
+//del file base info
 func (f *Base) delFileBase(md5 string) error {
 	var (
 		err error

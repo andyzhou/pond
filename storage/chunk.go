@@ -2,6 +2,7 @@ package storage
 
 import (
 	"errors"
+	"runtime"
 	"sort"
 	"sync"
 
@@ -72,6 +73,9 @@ func (f *Chunk) RemoveRemovedFileBase(md5 string) error {
 	if len(f.removedFiles) <= 0 {
 		newFileSlice := make([]*removedBaseFile, 0)
 		f.removedFiles = newFileSlice
+
+		//gc opt
+		runtime.GC()
 	}
 	return err
 }
