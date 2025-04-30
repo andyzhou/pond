@@ -20,7 +20,6 @@ import (
 //face info
 type FileBase struct {
 	ts        *tinysearch.Service //reference
-	//wg        *sync.WaitGroup     //reference
 	queue     *queue.Queue
 	queueSize int
 }
@@ -118,17 +117,6 @@ func (f *FileBase) GetBatchByRemoved(
 		Val: true,
 		IsMust: true,
 	}
-
-	////filter by size
-	//fileSizeMin := fileSize
-	//fileSizeMax := fileSizeMin + define.DefaultChunkBlockSize
-	//filterBySize := &tJson.FilterField{
-	//	Kind: tDefine.FilterKindNumericRange,
-	//	MinFloatVal: float64(fileSize),
-	//	MaxFloatVal: float64(fileSizeMax),
-	//	IsMust: true,
-	//}
-
 	filters = append(filters, filterByRemoved)
 
 	//setup sorts

@@ -39,7 +39,7 @@ type Manager struct {
 func NewManager(wg *sync.WaitGroup) *Manager {
 	this := &Manager{
 		wg: wg,
-		chunk: NewChunk(),
+		chunk: NewChunk(wg),
 		meta: NewMeta(wg),
 		chunkMap: sync.Map{},
 		chunkMaxSize: define.DefaultChunkMaxSize,
@@ -50,7 +50,11 @@ func NewManager(wg *sync.WaitGroup) *Manager {
 
 //quit
 func (f *Manager) Quit() {
+	//inter obj quit
 	f.meta.Quit()
+	f.chunk.Quit()
+
+	//clean chunk map
 	sf := func(k, v interface{}) bool {
 		chunkObj, _ := v.(*chunk.Chunk)
 		if chunkObj != nil {
@@ -180,13 +184,13 @@ func (f *Manager) SetConfig(cfg *conf.Config, userRedis ...bool) error {
 		return err
 	}
 
+	//set chunk config
+	f.chunk.SetConfig(cfg)
+
 	//defer
 	defer func() {
 		f.initDone = true
 	}()
-
-	//load removed chunk info
-	f.chunk.Load()
 
 	//load meta data obj into run env
 	metaObj := f.meta.GetMetaData()

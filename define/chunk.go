@@ -23,10 +23,11 @@ const (
 
 // default value
 const (
-	DefaultMinChunkFiles    = 1            //min chunk files
-	DefaultChunkBlockSize   = 128          //min block data size
-	DefaultChunkMaxSize     = DataSizeOfTB //one TB
-	DefaultChunkMultiIncr   = 0.1
-	DefaultChunkActiveHours = 4 //xx hours
-	DefaultChunkMetaTicker  = 5 //xx seconds
+	DefaultMinChunkFiles     = 1            //min chunk files
+	DefaultChunkBlockSize    = 128          //min block data size
+	DefaultChunkMaxSize      = DataSizeOfTB //one TB
+	DefaultChunkMultiIncr    = 0.05
+	DefaultChunkActiveHours  = 4 //xx hours
+	DefaultChunkMetaTicker   = 5 //xx seconds
+	DefaultChunkExceedBlocks = 2 //exceed max blocks
 )

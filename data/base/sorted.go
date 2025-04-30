@@ -78,6 +78,55 @@ func (d *SortedData) GetTotalCount(
 	return total, subErr
 }
 
+//get greater member by score
+func (d *SortedData) GetGreaterMemberByScore(
+		tag string,
+		score float64,
+	) (*genRedis.Z, error) {
+	//check
+	if tag == "" || score < 0 {
+		return nil, errors.New("invalid parameter")
+	}
+
+	//get key and connect
+	connect, key, err := d.getKeyConnect(tag)
+	if err != nil {
+		return nil, err
+	}
+
+	//create context
+	ctx, cancel := d.CreateContext()
+	defer cancel()
+
+	//set key
+	keys := []string{
+		key,
+	}
+
+	//set args
+	args := make([]interface{}, 0)
+	args = append(args, score)
+
+	//load lua script
+	script := LuaScriptOfPickSortedNearMember
+	scriptSha, subErr := connect.ScriptLoad(ctx, script).Result()
+	if subErr != nil {
+		return nil, subErr
+	}
+
+	//run lua script
+	resp, subErrTwo := connect.EvalSha(
+		ctx,
+		scriptSha,
+		keys,
+		args...,
+	).Result()
+	if subErrTwo != nil || resp == nil {
+		return nil, subErrTwo
+	}
+	return nil, nil
+}
+
 //get batch members
 //sorted by score
 func (d *SortedData) GetBatchMembers(

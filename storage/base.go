@@ -46,6 +46,19 @@ func (f *Base) delFileInfo(shortUrl string) error {
 	return err
 }
 
+////mark file base as removed
+////just storage into sorted set for next re-use
+//func (f *Base) markRemoveFileBase(md5 string, blocks int) error {
+//	var (
+//		err error
+//	)
+//	if f.useRedis {
+//	}else{
+//
+//	}
+//	return nil
+//}
+
 //del file base info
 func (f *Base) delFileBase(md5 string) error {
 	var (

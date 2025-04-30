@@ -107,7 +107,7 @@ func main() {
 	readData(p, shortUrl)
 
 	//del data
-	//delData(p, ShortUrl)
+	//delData(p, shortUrl)
 
 	//delay quit
 	df := func() {

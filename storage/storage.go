@@ -391,7 +391,6 @@ func (f *Storage) writeNewData(data []byte) (string, error) {
 		shortUrl string
 		fileBaseObj *json.FileBaseJson
 		activeChunk *chunk.Chunk
-		needRemovedMd5 string
 		offset int64 = -1
 		err error
 	)
@@ -443,10 +442,12 @@ func (f *Storage) writeNewData(data []byte) (string, error) {
 
 			//others setup
 			offset = fileBaseObj.Offset
-			needRemovedMd5 = removedFileBase.Md5
 
 			//get active chunk by file id
 			activeChunk, err = f.manager.GetChunkById(fileBaseObj.ChunkFileId)
+
+			//save removed
+			f.manager.GetRunningChunk().SaveRemoved()
 		}
 
 		//check and pick active chunk
@@ -496,11 +497,6 @@ func (f *Storage) writeNewData(data []byte) (string, error) {
 	err = f.saveFileBase(fileBaseObj)
 	if err != nil {
 		return shortUrl, err
-	}
-
-	if needRemovedMd5 != "" {
-		//remove running removed file base info
-		f.manager.GetRunningChunk().RemoveRemovedFileBase(needRemovedMd5)
 	}
 
 	//create new file info
