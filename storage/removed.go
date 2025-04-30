@@ -131,6 +131,9 @@ func (f *Removed) AddRemoved(md5 string, blocks int64) error {
 	f.removedJson.BaseInfo[md5] = blocks
 
 	//add into sorter
+	if f.removedSorter == nil {
+		f.removedSorter = make([]*removedBaseFile, 0)
+	}
 	rf := &removedBaseFile{
 		md5: md5,
 		blocks: blocks,
