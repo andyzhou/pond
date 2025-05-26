@@ -15,6 +15,7 @@ import (
  * @author <AndyZhou>
  * @mail <diudiu8848@163.com>
  * - service one single node or group data
+ * - one root data path, one pond obj
  */
 
 //global variable
