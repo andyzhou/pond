@@ -21,7 +21,6 @@ import (
 var (
 	_pond     *Pond
 	_pondOnce sync.Once
-	//_wg sync.WaitGroup
 )
 
 //face info
@@ -112,9 +111,6 @@ func (f *Pond) SetConfig(
 	}
 
 	//setup base config
-	if cfg.ChunkSizeMax < define.DefaultChunkMaxSize {
-		cfg.ChunkSizeMax = define.DefaultChunkMaxSize
-	}
 	if cfg.ChunkBlockSize <= 0 {
 		cfg.ChunkBlockSize = define.DefaultChunkBlockSize
 	}
