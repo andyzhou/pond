@@ -90,6 +90,28 @@ func (f *Manager) GetChunkById(id int64) (*chunk.Chunk, error) {
 	return nil, errors.New("no chunk obj")
 }
 
+//get all chunk active size
+//return map[chunkId]activeSize
+func (f *Manager) GetAllChunkSize() map[int64]int64 {
+	//check
+	if &f.chunkMap == nil {
+		return nil
+	}
+
+	//format result
+	result := make(map[int64]int64)
+	sf := func(k, v interface{}) bool {
+		chunkId, _ := k.(int64)
+		chunkObj, _ := v.(*chunk.Chunk)
+		if chunkId > 0 && chunkObj != nil {
+			result[chunkId] = chunkObj.GetChunkActiveSize()
+		}
+		return true
+	}
+	f.chunkMap.Range(sf)
+	return result
+}
+
 //get running chunk obj
 func (f *Manager) GetRunningChunk() *Chunk {
 	return f.chunk

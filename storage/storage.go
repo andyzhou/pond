@@ -57,6 +57,11 @@ func (f *Storage) Quit() {
 	}
 }
 
+//get all chunk active size
+func (f *Storage) GetAllChunkActiveSize() map[int64]int64 {
+	return f.manager.GetAllChunkSize()
+}
+
 //get file info list from search
 //sync opt
 func (f *Storage) GetFilesInfo(

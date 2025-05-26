@@ -5,6 +5,7 @@ This is a big file storage library.
 - one file support TB level storage
 - support redis cache for high performance
 - default use beleve search as file info search
+- one data root path, one pond storage service
 
 # Config setup
 ```

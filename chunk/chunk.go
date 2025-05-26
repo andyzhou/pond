@@ -110,6 +110,11 @@ func (f *Chunk) IsAvailable() bool {
 	return f.chunkObj.Size < f.chunkObj.MaxSize
 }
 
+//get chunk active size
+func (f *Chunk) GetChunkActiveSize() int64 {
+	return f.chunkObj.Size
+}
+
 //set chunk max size
 func (f *Chunk) SetChunkMaxSize(size int64) error {
 	if size <= 0 {
