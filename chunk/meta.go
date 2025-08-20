@@ -16,7 +16,7 @@ import (
  */
 
 //cb for update meta file
-func (f *Chunk) cbForUpdateMeta() error {
+func (f *Chunk) cbForUpdateMeta(inputs ...interface{}) error {
 	if f.metaUpdated {
 		return errors.New("meta file had updated")
 	}

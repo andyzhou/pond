@@ -203,7 +203,7 @@ func (f *Removed) SaveRemoved() error {
 }
 
 //cb for auto save meta
-func (f *Removed) cbForAutoSaveMeta() error {
+func (f *Removed) cbForAutoSaveMeta(inputs ...interface{}) error {
 	return f.SaveRemoved()
 }
 

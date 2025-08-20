@@ -198,7 +198,7 @@ func (f *Meta) genNewFileDataId() int64 {
 }
 
 //cb for auto save meta
-func (f *Meta) cbForAutoSaveMeta() error {
+func (f *Meta) cbForAutoSaveMeta(inputs ...interface{}) error {
 	if f.metaUpdated {
 		//has updated, do nothing
 		return errors.New("meta had updated")

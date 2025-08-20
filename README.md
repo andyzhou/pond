@@ -40,6 +40,7 @@ go test -bench=Read -benchmem -benchtime=20s
 ```
 
 # Future
-- file base and info storage in redis for performance
+- file base and info storage in redis for performance [done]
+- add sqlite db for local storage
 - add download file data support
 - get reuse removed file base info from redis pass lua atomic opt

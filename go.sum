@@ -8,6 +8,8 @@ github.com/andyzhou/tinylib v0.0.0-20240415121101-c5b30fdb3714 h1:32Y7KG8DmQ1QmQ
 github.com/andyzhou/tinylib v0.0.0-20240415121101-c5b30fdb3714/go.mod h1:YKvZB0RhvbGcDkErvI5Ul5ZdnMUwLnNuyfFlBNYADT8=
 github.com/andyzhou/tinylib v0.0.0-20241228123000-c07db4d1b844 h1:GoPJby09iHCt+sT7D1Q5uTrAEwX0A1EcAPl/8dyPHFU=
 github.com/andyzhou/tinylib v0.0.0-20241228123000-c07db4d1b844/go.mod h1:6OE/psY8sbDadd2r3GD/ZqD+8iJJAYJeD3Hz1TYKFFA=
+github.com/andyzhou/tinylib v0.0.0-20250404094403-69a7a2941678 h1:3DICBFf49/XB3QdRibiIm+hXzlG4rs7BDM8Y+2t+hQ0=
+github.com/andyzhou/tinylib v0.0.0-20250404094403-69a7a2941678/go.mod h1:/bhUIBggcRaDrXhwStFHfTp+Fyt9bsa/bcHnQaYXADc=
 github.com/andyzhou/tinysearch v0.0.0-20230915043404-0bca8937c1b4 h1:wQUisYce77Jotfsl4SrMTDc3kb1frZTRIw0eqt05kBc=
 github.com/andyzhou/tinysearch v0.0.0-20230915043404-0bca8937c1b4/go.mod h1:UjIFgRvNQZvwBK7waqh/QvqqLp4vWgHq1txZIS4ooN4=
 github.com/andyzhou/tinysearch v0.0.0-20241210033046-5791f870fe2f h1:NNGhCwdSOv80D3aMfLKvFWBE/YxyjQhfl2779K0OvX0=
